@@ -90,6 +90,7 @@ The goal is not maximum autonomy — it is controlled, explainable execution.
 
 Playbook Tools is structured as a monorepo:
 
+```
 apps/
   web/          - React frontend
 services/
@@ -101,6 +102,7 @@ packages/
 docs/
 infra/
 tests/
+```
 
 Separation of concerns:
 
