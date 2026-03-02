@@ -18,23 +18,24 @@ Playbook Tools is designed as a structured workflow execution engine that:
 - Executes tools sequentially through a registered tool registry
 - Enforces strict JSON schema validation on all tool inputs and outputs
 - Maintains intermediate state across steps
-- Logs every tool call and intermediate artifact
+- Logs every tool invocation and intermediate artifact
 - Performs verification passes to reduce hallucination and unsupported claims
 - Produces both structured JSON outputs and human-readable reports
 - Tracks execution traces, timing, and cost metrics
 - Supports document ingestion (text-based PDFs + OCR for scanned documents)
 
-This system prioritizes determinism, reproducibility, and observability.
+The system prioritizes determinism, reproducibility, and observability over autonomy.
 
 ---
 
 ## Core Concepts
 
-### WorkflowSpec
+### Workflow Definition
 
 A structured definition of a linear workflow.
 
 In v1:
+
 - Linear execution only
 - Maximum 6 steps
 - No parallel execution
@@ -45,30 +46,31 @@ In v1:
 
 ### Tool Registry
 
-All tools must be explicitly registered and bound to strict JSON schemas.
+All tools are explicitly registered and bound to strict JSON schemas.
 
 Each tool:
-- Declares input schema
-- Declares output schema
-- Validates output before returning
+
+- Declares an input schema
+- Declares an output schema
+- Validates its output before returning
 - Can be retried once on failure
 
 ---
 
-### RunRecord
+### Execution Record
 
-Every execution produces a complete run record containing:
+Each workflow execution persists structured metadata including:
 
-- WorkflowSpec snapshot
+- Workflow definition snapshot
 - Step-by-step execution logs
 - Tool inputs and outputs
 - Validation results
 - Retry attempts
 - Execution timing
-- Final structured JSON output
+- Final structured output
 - Human-readable report
 
-Runs are designed to be reproducible and inspectable.
+Executions are designed to be reproducible and inspectable.
 
 ---
 
@@ -76,9 +78,9 @@ Runs are designed to be reproducible and inspectable.
 
 Playbook Tools enforces:
 
-- Structured step definitions
+- Explicit step definitions
 - Controlled model parameters
-- Explicit retry limits
+- Retry limits
 - Schema validation gates
 - Logged intermediate state
 
@@ -90,6 +92,8 @@ The goal is not maximum autonomy — it is controlled, explainable execution.
 
 Playbook Tools is structured as a monorepo:
 
+
+```
 apps/
   web/          - React frontend
 services/
@@ -101,29 +105,31 @@ packages/
 docs/
 infra/
 tests/
+```
+
 
 Separation of concerns:
 
-- engine/ contains the deterministic workflow execution loop
-- tools/ contains schema-bound tool implementations
-- api/ exposes execution endpoints
-- web/ provides a run console interface
-- schemas/ defines versioned JSON schema contracts
+- `engine/` contains the deterministic workflow execution loop
+- `tools/` contains schema-bound tool implementations
+- `api/` exposes execution endpoints
+- `web/` provides a run console interface
+- `schemas/` defines versioned JSON schema contracts
 
 ---
 
 ## Example Execution Flow
 
 1. User uploads document(s)
-2. User submits task query
-3. WorkflowSpec is generated or supplied
-4. Engine executes steps sequentially:
+2. User submits a task query
+3. A structured workflow definition is constructed
+4. The engine executes steps sequentially:
    - Retrieve relevant document chunks
    - Extract structured data
    - Compute derived values
-   - Verify claims against citations
-5. RunRecord is persisted
-6. System returns:
+   - Verify claims against source citations
+5. Execution metadata is recorded
+6. The system returns:
    - Structured JSON output
    - Human-readable summary report
 
@@ -135,10 +141,10 @@ Separation of concerns:
 
 Planned milestones:
 
-- [ ] Define WorkflowSpec schema
+- [ ] Define workflow definition schema
 - [ ] Implement core engine execution loop
 - [ ] Tool registry abstraction
-- [ ] RunRecord persistence
+- [ ] Execution record persistence
 - [ ] Verification pass
 - [ ] Deterministic configuration controls
 - [ ] Document ingestion with OCR support
@@ -150,21 +156,22 @@ Planned milestones:
 ## Local Development (Planned)
 
 Clone repository:
-
+```
 git clone https://github.com/hwale/playbook-tools.git
 cd playbook-tools
-
+```
 Backend:
-
+```
 cd services/api
 pip install -r requirements.txt
 uvicorn main:app --reload
-
+```
 Frontend:
-
+```
 cd apps/web
 npm install
 npm run dev
+```
 
 ---
 
@@ -173,6 +180,7 @@ npm run dev
 Playbook Tools is intentionally constrained.
 
 It is NOT:
+
 - A general agent framework
 - A multi-branch workflow engine
 - A LangGraph or Airflow clone
@@ -191,4 +199,4 @@ It is a minimal, architecturally disciplined AI workflow runtime built to demons
 
 ## License
 
-MIT (or specify preferred license)
+MIT
