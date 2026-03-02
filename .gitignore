@@ -1,17 +1,40 @@
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Packaging metadata
+*.egg-info/
+dist/
+build/
 
 # Virtual env
 .venv/
+env/
+venv/
 
+# =========================
 # Node
+# =========================
 node_modules/
 
+# =========================
 # Env files
+# =========================
 .env
 **/.env
 
+# =========================
 # OS
+# =========================
 .DS_Store
 Thumbs.db
+
+# =========================
+# Local storage (RAG, uploads, etc)
+# =========================
+.data/

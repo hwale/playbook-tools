@@ -1,202 +1,187 @@
-# Playbook Tools
+Playbook Tools
 
-Playbook Tools is a deterministic AI workflow runtime that executes structured
-tool chains with strict schema validation, verification passes, and full execution traceability.
+Playbook Tools is a structured AI workflow runtime built as a systems engineering portfolio project.
 
-This project is built as a systems engineering portfolio piece focused on
-architectural discipline rather than product features.
+The goal is to build a deterministic, schema-driven execution engine for AI workflows — with strong validation, observability, and architectural discipline.
 
----
+This repository currently contains:
 
-## Why Playbook Tools?
+A Dockerized FastAPI backend
 
-Most AI applications today are thin wrappers around LLM APIs.
+A Vite + React frontend
 
-Playbook Tools is designed as a structured workflow execution engine that:
+A versioned schemas package
 
-- Converts tasks into explicit, linear workflow steps
-- Executes tools sequentially through a registered tool registry
-- Enforces strict JSON schema validation on all tool inputs and outputs
-- Maintains intermediate state across steps
-- Logs every tool invocation and intermediate artifact
-- Performs verification passes to reduce hallucination and unsupported claims
-- Produces both structured JSON outputs and human-readable reports
-- Tracks execution traces, timing, and cost metrics
-- Supports document ingestion (text-based PDFs + OCR for scanned documents)
+A clean monorepo structure
 
-The system prioritizes determinism, reproducibility, and observability over autonomy.
+The foundation for tool-based workflow execution
 
----
+Initial RAG (Retrieval-Augmented Generation) infrastructure
 
-## Core Concepts
+Current Architecture
 
-### Workflow Definition
-
-A structured definition of a linear workflow.
-
-In v1:
-
-- Linear execution only
-- Maximum 6 steps
-- No parallel execution
-- No dynamic graph rewriting
-- One retry per failed step
-
----
-
-### Tool Registry
-
-All tools are explicitly registered and bound to strict JSON schemas.
-
-Each tool:
-
-- Declares an input schema
-- Declares an output schema
-- Validates its output before returning
-- Can be retried once on failure
-
----
-
-### Execution Record
-
-Each workflow execution persists structured metadata including:
-
-- Workflow definition snapshot
-- Step-by-step execution logs
-- Tool inputs and outputs
-- Validation results
-- Retry attempts
-- Execution timing
-- Final structured output
-- Human-readable report
-
-Executions are designed to be reproducible and inspectable.
-
----
-
-### Determinism
-
-Playbook Tools enforces:
-
-- Explicit step definitions
-- Controlled model parameters
-- Retry limits
-- Schema validation gates
-- Logged intermediate state
-
-The goal is not maximum autonomy — it is controlled, explainable execution.
-
----
-
-## Architecture
-
-Playbook Tools is structured as a monorepo:
-
+Monorepo structure:
 
 ```
-apps/
-  web/          - React frontend
-services/
-  api/          - FastAPI execution service
-packages/
-  engine/       - Core workflow runtime
-  tools/        - Tool implementations
-  schemas/      - JSON schema definitions
-docs/
-infra/
-tests/
+playbook-tools/
+  apps/
+    web/              # React frontend (Vite + TS + Tailwind + daisyUI)
+  services/
+    api/              # FastAPI backend
+  packages/
+    schemas/          # Versioned Pydantic schema contracts
+  .data/              # Local storage (ignored by git)
+  docker-compose.yml
 ```
 
+Key design principles:
 
-Separation of concerns:
+Versioned schema contracts (v1)
 
-- `engine/` contains the deterministic workflow execution loop
-- `tools/` contains schema-bound tool implementations
-- `api/` exposes execution endpoints
-- `web/` provides a run console interface
-- `schemas/` defines versioned JSON schema contracts
+Runtime validation via Pydantic
 
----
+Strict separation of API, schemas, and execution logic
 
-## Example Execution Flow
+Docker-based development for reproducibility
 
-1. User uploads document(s)
-2. User submits a task query
-3. A structured workflow definition is constructed
-4. The engine executes steps sequentially:
-   - Retrieve relevant document chunks
-   - Extract structured data
-   - Compute derived values
-   - Verify claims against source citations
-5. Execution metadata is recorded
-6. The system returns:
-   - Structured JSON output
-   - Human-readable summary report
+What Exists Today
+Backend (FastAPI)
 
----
+/health endpoint
 
-## Current Status
+/config endpoint
 
-🚧 In active development.
+Versioned Pydantic schemas (installed as a local package)
 
-Planned milestones:
+Dockerized dev environment
 
-- [ ] Define workflow definition schema
-- [ ] Implement core engine execution loop
-- [ ] Tool registry abstraction
-- [ ] Execution record persistence
-- [ ] Verification pass
-- [ ] Deterministic configuration controls
-- [ ] Document ingestion with OCR support
-- [ ] Frontend run console UI
-- [ ] CI/CD pipeline
+Editable installs for monorepo packages
 
----
+Ready for tool registry + workflow engine layer
 
-## Local Development (Planned)
+Frontend (React)
 
-Clone repository:
+Vite dev server
+
+Dockerized
+
+API proxy via /api
+
+Health endpoint displayed in UI
+
+Schema Package
+
+packages/schemas contains:
+
+WorkflowSpecV1
+
+ToolSpecV1
+
+RunRecordV1
+
+StepRecordV1
+
+FinalOutputV1
+
+These define the contract for:
+
+Workflow definitions
+
+Tool interfaces
+
+Execution records
+
+All schema validation occurs at runtime via Pydantic.
+
+Running Locally (Docker)
+Requirements
+
+Docker Desktop running
+
+Docker Compose available
+
+Start the system
+
+From repo root:
+
 ```
-git clone https://github.com/hwale/playbook-tools.git
-cd playbook-tools
+docker compose up -d --build
 ```
+
 Backend:
+
 ```
-cd services/api
-pip install -r requirements.txt
-uvicorn main:app --reload
+http://localhost:8000
 ```
+
 Frontend:
+
 ```
-cd apps/web
-npm install
-npm run dev
+http://localhost:5173
 ```
 
----
+Verify backend
 
-## Design Philosophy
+```
+curl http://localhost:8000/health
+```
 
-Playbook Tools is intentionally constrained.
+Development Notes
 
-It is NOT:
+The API image is built from the repo root to support monorepo packages.
 
-- A general agent framework
-- A multi-branch workflow engine
-- A LangGraph or Airflow clone
-- An autonomous system
+packages/schemas is installed in editable mode during image build.
 
-It is a minimal, architecturally disciplined AI workflow runtime built to demonstrate:
+.data/ is mounted for local storage (PDFs, vector DB, etc).
 
-- Structured reasoning
-- Tool orchestration
-- Schema enforcement
-- Verification loops
-- Execution traceability
-- Systems-level thinking
+Python packaging metadata (\*.egg-info) is gitignored.
 
----
+Design Direction
 
-## License
+Playbook Tools is evolving toward:
+
+A deterministic linear workflow engine
+
+Tool registry abstraction
+
+Strict JSON schema validation for tool input/output
+
+Execution trace recording
+
+Verification pass layer
+
+Structured final outputs
+
+RAG-based document workflows
+
+Production deployability via Docker
+
+The system prioritizes:
+
+Reproducibility
+
+Observability
+
+Deterministic behavior
+
+Strong architectural boundaries
+
+It is intentionally constrained — not an autonomous agent framework.
+
+Next Milestones
+
+Implement tool registry pattern
+
+Add RAG tools (PDF extract, chunk, embed, retrieve)
+
+Build minimal workflow runner
+
+Add structured execution logging
+
+Prepare production deployment (EC2 + Docker)
+
+Introduce CI (GitHub Actions)
+
+License
 
 MIT

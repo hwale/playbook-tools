@@ -1,11 +1,14 @@
 services:
   api:
     build:
-      context: ./services/api
+      context: .
+      dockerfile: services/api/Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./services/api/app:/app/app
+      - ./:/repo
+      - ./.data:/repo/.data
+    working_dir: /repo/services/api
     env_file:
       - ./services/api/.env
     command: >
