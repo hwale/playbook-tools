@@ -3,24 +3,19 @@ services:
     build:
       context: .
       dockerfile: services/api/Dockerfile
-    ports:
-      - "8000:8000"
     volumes:
-      - ./:/repo
       - ./.data:/repo/.data
     working_dir: /repo/services/api
     env_file:
       - ./services/api/.env
     command: >
-      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   web:
     build:
       context: ./apps/web
+      dockerfile: Dockerfile.prod
     ports:
-      - "5173:5173"
-    volumes:
-      - ./apps/web:/app
-      - /app/node_modules
+      - "80:80"
     depends_on:
       - api
