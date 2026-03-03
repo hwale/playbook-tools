@@ -1,187 +1,114 @@
-Playbook Tools
+# Playbook Tools
 
-Playbook Tools is a structured AI workflow runtime built as a systems engineering portfolio project.
+Playbook Tools is a structured AI workflow runtime built as a systems engineering portfolio project. The goal is to build a deterministic, schema-driven execution engine for AI workflows — with strong validation, observability, and architectural discipline.
 
-The goal is to build a deterministic, schema-driven execution engine for AI workflows — with strong validation, observability, and architectural discipline.
+## Current Architecture
 
-This repository currently contains:
+The project is organized as a monorepo:
 
-A Dockerized FastAPI backend
+- **`apps/web/`**: React frontend (Vite + TypeScript + Tailwind CSS + daisyUI)
+- **`services/api/`**: FastAPI backend
+- **`packages/schemas/`**: Versioned Pydantic schema contracts for tools and workflows
+- **`.data/`**: Local storage for the vector database and files (ignored by git)
 
-A Vite + React frontend
+### Key Design Principles
 
-A versioned schemas package
+- Versioned schema contracts
+- Strict separation of API, schemas, and execution logic
+- Runtime validation via Pydantic
+- Docker-based development for reproducibility
 
-A clean monorepo structure
+## Getting Started
 
-The foundation for tool-based workflow execution
+### Requirements
 
-Initial RAG (Retrieval-Augmented Generation) infrastructure
+- Node.js (Optional, for running `npm` convenience scripts)
+- Docker and Docker Compose installed and running
 
-Current Architecture
+### Environment Setup
 
-Monorepo structure:
+Before running the application, you need to create an environment file for the backend API.
 
-```
-playbook-tools/
-  apps/
-    web/              # React frontend (Vite + TS + Tailwind + daisyUI)
-  services/
-    api/              # FastAPI backend
-  packages/
-    schemas/          # Versioned Pydantic schema contracts
-  .data/              # Local storage (ignored by git)
-  docker-compose.yml
-```
+1. Create a `.env` file in `services/api/`:
+   ```bash
+   touch services/api/.env
+   ```
+2. Add the following required variables to `services/api/.env` (adjust values as needed):
+   ```env
+   ENVIRONMENT=local
+   LOG_LEVEL=debug
+   APP_NAME="Playbook Tools API (Local)"
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
 
-Key design principles:
+### Running Locally
 
-Versioned schema contracts (v1)
+You can run the application using either the provided `npm` convenience scripts or using raw `docker compose` commands if you don't have Node.js installed.
 
-Runtime validation via Pydantic
+1. **Start the development environment**:
 
-Strict separation of API, schemas, and execution logic
+   **Using `npm`:**
 
-Docker-based development for reproducibility
+   ```bash
+   npm run dev
+   ```
 
-What Exists Today
-Backend (FastAPI)
+   _(To rebuild the images during startup, use `npm run dev:build`)_
 
-/health endpoint
+   **Using pure Docker:**
 
-/config endpoint
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+   ```
 
-Versioned Pydantic schemas (installed as a local package)
+   _(To rebuild the images during startup, append `--build`)_
 
-Dockerized dev environment
+2. **Access the locally running services**:
+   - **Frontend UI**: [http://localhost:5173](http://localhost:5173)
+   - **Backend API**: [http://localhost:8000](http://localhost:8000)
 
-Editable installs for monorepo packages
+3. **Verify the backend health**:
 
-Ready for tool registry + workflow engine layer
+   ```bash
+   curl http://localhost:8000/health
+   ```
 
-Frontend (React)
+4. **View logs**:
 
-Vite dev server
+   **Using `npm`:**
 
-Dockerized
+   ```bash
+   npm run logs
+   ```
 
-API proxy via /api
+   **Using pure Docker:**
 
-Health endpoint displayed in UI
+   ```bash
+   docker compose logs -f --tail=200
+   ```
 
-Schema Package
+5. **Stop the development environment**:
 
-packages/schemas contains:
+   **Using `npm`:**
 
-WorkflowSpecV1
+   ```bash
+   npm run dev:down
+   ```
 
-ToolSpecV1
+   **Using pure Docker:**
 
-RunRecordV1
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+   ```
 
-StepRecordV1
+### Running in Production
 
-FinalOutputV1
+To run the production deployment setup:
 
-These define the contract for:
+- **Start**: `npm run prod` or `docker compose up -d`
+- **Rebuild**: `npm run prod:build` or `docker compose up -d --build`
+- **Stop**: `npm run prod:down` or `docker compose down`
 
-Workflow definitions
-
-Tool interfaces
-
-Execution records
-
-All schema validation occurs at runtime via Pydantic.
-
-Running Locally (Docker)
-Requirements
-
-Docker Desktop running
-
-Docker Compose available
-
-Start the system
-
-From repo root:
-
-```
-docker compose up -d --build
-```
-
-Backend:
-
-```
-http://localhost:8000
-```
-
-Frontend:
-
-```
-http://localhost:5173
-```
-
-Verify backend
-
-```
-curl http://localhost:8000/health
-```
-
-Development Notes
-
-The API image is built from the repo root to support monorepo packages.
-
-packages/schemas is installed in editable mode during image build.
-
-.data/ is mounted for local storage (PDFs, vector DB, etc).
-
-Python packaging metadata (\*.egg-info) is gitignored.
-
-Design Direction
-
-Playbook Tools is evolving toward:
-
-A deterministic linear workflow engine
-
-Tool registry abstraction
-
-Strict JSON schema validation for tool input/output
-
-Execution trace recording
-
-Verification pass layer
-
-Structured final outputs
-
-RAG-based document workflows
-
-Production deployability via Docker
-
-The system prioritizes:
-
-Reproducibility
-
-Observability
-
-Deterministic behavior
-
-Strong architectural boundaries
-
-It is intentionally constrained — not an autonomous agent framework.
-
-Next Milestones
-
-Implement tool registry pattern
-
-Add RAG tools (PDF extract, chunk, embed, retrieve)
-
-Build minimal workflow runner
-
-Add structured execution logging
-
-Prepare production deployment (EC2 + Docker)
-
-Introduce CI (GitHub Actions)
-
-License
+## License
 
 MIT
