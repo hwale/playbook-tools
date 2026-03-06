@@ -1,4 +1,23 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    # These must match DATABASE_URL in your .env.
+    environment:
+      POSTGRES_USER: playbook
+      POSTGRES_PASSWORD: playbook
+      POSTGRES_DB: playbook
+    volumes:
+      # Named volume — data survives container restarts and rebuilds.
+      # Without this, every `docker compose down` wipes your database.
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # pg_isready checks that Postgres is accepting connections.
+      # The api service waits for this before starting.
+      test: ["CMD-SHELL", "pg_isready -U playbook"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -10,6 +29,21 @@ services:
       - ./services/api/.env
     command: >
       uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   web:
     build:
@@ -18,4 +52,11 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+# Named volumes are managed by Docker and persist independently of containers.
+# `docker compose down` removes containers but NOT volumes.
+# `docker compose down -v` removes both — use only when you want a clean slate.
+volumes:
+  postgres_data:

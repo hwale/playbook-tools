@@ -3,6 +3,12 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# faiss-cpu requires OpenMP runtime (libomp-dev) for parallel vector operations.
+# These aren't included in python:slim by default.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libomp-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /repo
 
 # Copy only dependency manifests first (better caching)

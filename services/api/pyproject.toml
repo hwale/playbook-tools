@@ -7,11 +7,30 @@ dependencies = [
   "pydantic>=2.7",
   "pydantic-settings>=2.1",
   "uvicorn[standard]>=0.27",
-  "chromadb>=0.5",
   "pypdf>=4.0",
+  # --- Vector search ---
+  # faiss-cpu is Facebook's similarity search library. Runs in-process (no server).
+  # Use faiss-gpu if you have a CUDA-capable GPU and need to search millions of vectors.
+  "faiss-cpu>=1.7",
+  # numpy is required by FAISS for vector array operations.
+  "numpy>=1.24",
   "openai>=1.0",
   "python-multipart>=0.0.9",
+  # --- Database ---
+  # sqlalchemy[asyncio] adds async engine + session support on top of the ORM.
+  "sqlalchemy[asyncio]>=2.0",
+  # asyncpg is the async PostgreSQL driver — used by SQLAlchemy via the +asyncpg URL prefix.
+  # You never call asyncpg directly; SQLAlchemy handles it.
+  "asyncpg>=0.29",
+  # alembic manages schema migrations — think git for your database structure.
+  "alembic>=1.13",
 ]
+
+[tool.setuptools.packages.find]
+# Alembic lives alongside app/ but isn't a distributable Python package —
+# it's a migration tool directory. Without this exclude, setuptools auto-discovers
+# both app/ and alembic/ and refuses to build (flat-layout ambiguity error).
+exclude = ["alembic*"]
 
 [build-system]
 requires = ["setuptools>=68"]

@@ -1,18 +1,29 @@
-import os
-from openai import OpenAI
+from app.core.config import get_openai_client
 
-_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-def embed_texts(texts: list[str], *, model: str = "text-embedding-3-small") -> list[list[float]]:
+async def embed_texts(
+    texts: list[str],
+    *,
+    model: str = "text-embedding-3-small",
+) -> list[list[float]]:
     """
     Returns one embedding vector per input string.
+
+    Batches all texts in a single API call — OpenAI supports up to 2048 inputs
+    per request, so this is efficient for typical document chunk counts.
     """
     if not texts:
         return []
 
-    resp = _client.embeddings.create(model=model, input=texts)
+    client = get_openai_client()
+    resp = await client.embeddings.create(model=model, input=texts)
     return [item.embedding for item in resp.data]
 
-def embed_query(text: str, *, model: str = "text-embedding-3-small") -> list[float]:
-    vecs = embed_texts([text], model=model)
+
+async def embed_query(
+    text: str,
+    *,
+    model: str = "text-embedding-3-small",
+) -> list[float]:
+    vecs = await embed_texts([text], model=model)
     return vecs[0]

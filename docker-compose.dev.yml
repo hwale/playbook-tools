@@ -1,33 +1,27 @@
 services:
+  postgres:
+    # In dev, expose 5432 so you can connect with a local DB client
+    # (TablePlus, pgAdmin, psql) without going through Docker.
+    # Connection string: postgresql://playbook:playbook@localhost:5432/playbook
+    ports:
+      - "5432:5432"
+
   api:
-    # In dev, expose API directly for convenience (optional)
     ports:
       - "8000:8000"
-
-    # In dev, mount repo for live reload + editable package changes
     volumes:
       - ./:/repo
       - ./.data:/repo/.data
-
-    # Dev command with reload
     command: >
       uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   web:
-    # Dev web uses the Vite Dockerfile (your existing one)
     build:
       context: ./apps/web
       dockerfile: Dockerfile
-
     ports:
       - "5173:5173"
-
     volumes:
       - ./apps/web:/app
       - /app/node_modules
-
-    # Vite dev server
     command: npm run dev -- --host 0.0.0.0
-
-    # In dev, you don't need nginx serving static files
-    # But we keep the service name "web" so existing expectations remain
