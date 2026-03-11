@@ -24,6 +24,17 @@ dependencies = [
   "asyncpg>=0.29",
   # alembic manages schema migrations — think git for your database structure.
   "alembic>=1.13",
+  # --- Agent (LangChain + LangGraph) ---
+  # langchain: core abstractions (tools, messages, chat models)
+  # langchain-openai: ChatOpenAI model wrapper
+  # langchain-community: third-party integrations (DuckDuckGo search)
+  # langgraph: graph-based agent runtime — provides create_react_agent
+  # duckduckgo-search: free web search, no API key required
+  "langchain>=0.2.0",
+  "langchain-openai>=0.1.0",
+  "langchain-community>=0.2.0",
+  "langgraph>=0.1.0",
+  "ddgs>=9.0.0",
 ]
 
 [tool.setuptools.packages.find]

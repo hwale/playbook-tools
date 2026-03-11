@@ -21,8 +21,11 @@ async def upload_document(
     settings: Settings = Depends(get_settings),
     db: AsyncSession = Depends(get_db),
 ):
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only .pdf files are supported.")
+    filename = file.filename or ""
+    is_pdf = filename.lower().endswith(".pdf")
+    is_md = filename.lower().endswith(".md")
+    if not (is_pdf or is_md):
+        raise HTTPException(status_code=400, detail="Only .pdf and .md files are supported.")
 
     upload_dir = settings.upload_dir
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -35,19 +38,24 @@ async def upload_document(
     # rather than just disappearing.
     doc = Document(
         id=document_id,
-        filename=file.filename,
+        filename=filename,
         status="processing",
     )
     db.add(doc)
     await db.commit()
 
-    # --- Process the PDF — update status on success or failure ---
+    # --- Process the file — update status on success or failure ---
     try:
-        pdf_bytes = await file.read()
-        pdf_path = upload_dir / f"{document_id}.pdf"
-        await asyncio.to_thread(pdf_path.write_bytes, pdf_bytes)
+        raw_bytes = await file.read()
+        suffix = ".pdf" if is_pdf else ".md"
+        file_path = upload_dir / f"{document_id}{suffix}"
+        await asyncio.to_thread(file_path.write_bytes, raw_bytes)
 
-        text = extract_text_from_pdf_bytes(pdf_bytes)
+        if is_pdf:
+            text = extract_text_from_pdf_bytes(raw_bytes)
+        else:
+            text = raw_bytes.decode("utf-8")
+
         if not text:
             raise ValueError(
                 "No extractable text found. This may be a scanned PDF (OCR not implemented yet)."

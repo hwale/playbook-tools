@@ -1,5 +1,5 @@
-import RagDemo from "./RagDemo";
+import PlaybookChat from "./PlaybookChat";
 
 export default function App() {
-  return <RagDemo />;
+  return <PlaybookChat />;
 }
