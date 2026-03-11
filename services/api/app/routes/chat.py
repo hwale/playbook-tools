@@ -1,30 +1,32 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.deps import get_optional_user
 from app.db import get_db
 from app.models.chat import ChatMessage, ChatSession
-from app.models.document import Document
+from app.models.user import User
 
 router = APIRouter(prefix="/chat", tags=["chat"])
-
-_UUID_PATTERN = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 
 
 # --- Request / Response schemas ---
 
 
 class CreateSessionRequest(BaseModel):
-    document_id: str = Field(..., pattern=_UUID_PATTERN)
+    playbook_name: str
+    document_id: str | None = None
 
 
 class SessionResponse(BaseModel):
     session_id: str
-    document_id: str
+    playbook_name: str | None
+    document_id: str | None
+    title: str | None
     created_at: str
 
 
@@ -38,77 +40,68 @@ class MessageResponse(BaseModel):
 # --- Routes ---
 
 
-@router.post("/sessions", status_code=201)
+@router.post("/sessions", status_code=201, response_model=SessionResponse)
 async def create_session(
     req: CreateSessionRequest,
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
 ):
     """
-    Start a new chat session for a document.
+    Start a new chat session for a playbook.
 
-    The frontend calls this when the user clicks "New Chat" on a document.
-    Returns the session_id that should be passed to /query on subsequent questions.
+    Called when the user clicks "+ New Chat" or sends their first message.
+    Returns session_id to be passed in subsequent /agent/query/stream calls.
     """
-    # Verify the document exists and is ready to query.
-    doc = await db.get(Document, uuid.UUID(req.document_id))
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found.")
-    if doc.status != "complete":
-        raise HTTPException(status_code=409, detail=f"Document is not ready (status: {doc.status}).")
-
-    session = ChatSession(document_id=doc.id)
+    session = ChatSession(
+        id=uuid.uuid4(),
+        playbook_name=req.playbook_name,
+        document_id=uuid.UUID(req.document_id) if req.document_id else None,
+        user_id=user.id if user else None,
+    )
     db.add(session)
     await db.commit()
 
-    return SessionResponse(
-        session_id=str(session.id),
-        document_id=str(session.document_id),
-        created_at=str(session.created_at),
-    )
+    return _session_response(session)
 
 
-@router.get("/sessions")
+@router.get("/sessions", response_model=list[SessionResponse])
 async def list_sessions(
-    document_id: str = Query(..., pattern=_UUID_PATTERN),
+    playbook_name: str = Query(...),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
 ):
     """
-    List all chat sessions for a document, newest first.
+    List sessions for a playbook, newest first.
 
-    The frontend calls this when the user opens a document to show their
-    conversation history sidebar.
+    Filters by user_id when authenticated so users only see their own sessions.
+    In unauthenticated dev mode, returns sessions with no owner.
     """
     stmt = (
         select(ChatSession)
-        .where(ChatSession.document_id == uuid.UUID(document_id))
+        .where(ChatSession.playbook_name == playbook_name)
         .order_by(ChatSession.created_at.desc())
     )
+    if user:
+        stmt = stmt.where(ChatSession.user_id == user.id)
+    else:
+        stmt = stmt.where(ChatSession.user_id.is_(None))
+
     result = await db.execute(stmt)
     sessions = result.scalars().all()
-
-    return [
-        SessionResponse(
-            session_id=str(s.id),
-            document_id=str(s.document_id),
-            created_at=str(s.created_at),
-        )
-        for s in sessions
-    ]
+    return [_session_response(s) for s in sessions]
 
 
-@router.get("/sessions/{session_id}/messages")
+@router.get("/sessions/{session_id}/messages", response_model=list[MessageResponse])
 async def get_session_messages(
     session_id: str,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get all messages in a session, ordered by creation time.
+    Get all messages in a session ordered by creation time.
 
-    The frontend calls this to render the chat history when the user
-    opens an existing session.
+    Called when the user clicks an existing session in the sidebar.
+    selectinload eagerly fetches messages in one query (avoids N+1).
     """
-    # selectinload eagerly loads messages in a single query instead of
-    # lazy-loading them one by one (the N+1 problem).
     stmt = (
         select(ChatSession)
         .where(ChatSession.id == uuid.UUID(session_id))
@@ -129,3 +122,16 @@ async def get_session_messages(
         )
         for m in session.messages
     ]
+
+
+# --- Helpers ---
+
+
+def _session_response(s: ChatSession) -> SessionResponse:
+    return SessionResponse(
+        session_id=str(s.id),
+        playbook_name=s.playbook_name,
+        document_id=str(s.document_id) if s.document_id else None,
+        title=s.title,
+        created_at=str(s.created_at),
+    )

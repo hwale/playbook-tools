@@ -4,7 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.110",
-  "pydantic>=2.7",
+  "pydantic[email]>=2.7",
   "pydantic-settings>=2.1",
   "uvicorn[standard]>=0.27",
   "pypdf>=4.0",
@@ -35,6 +35,13 @@ dependencies = [
   "langchain-community>=0.2.0",
   "langgraph>=0.1.0",
   "ddgs>=9.0.0",
+  # --- Auth ---
+  # bcrypt: password hashing. Deliberately slow to resist brute-force attacks.
+  # Using the bcrypt package directly — passlib has compatibility issues with bcrypt>=4.0.
+  "bcrypt>=4.0",
+  # python-jose: JWT encode/decode. JWTs are self-contained, stateless tokens —
+  # the server can verify identity without a DB lookup on every request.
+  "python-jose[cryptography]>=3.3.0",
 ]
 
 [tool.setuptools.packages.find]

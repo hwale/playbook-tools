@@ -16,21 +16,33 @@ class ChatSession(Base):
     )
 
     # Which document this conversation is about.
-    # ForeignKey enforces referential integrity — you can't create a session
-    # for a document_id that doesn't exist in the documents table.
-    # ondelete="CASCADE" means deleting a document also deletes all its sessions.
-    document_id: Mapped[uuid.UUID] = mapped_column(
+    # Nullable — sessions can exist before a document is uploaded.
+    # Updated when the user uploads a file during the session.
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("documents.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
     )
+
+    # Which user owns this session. Nullable for unauthenticated dev use.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    # Which playbook this session uses. Drives sidebar filtering:
+    # each playbook tab shows only its own sessions.
+    playbook_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Auto-set from the first user message (truncated to 60 chars).
+    # Shown in the sidebar so users can identify past conversations.
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[str] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
     )
 
-    # ORM relationship — lets you do session.messages to get all messages.
-    # Not a DB column; SQLAlchemy resolves it via a JOIN when accessed.
     messages: Mapped[list["ChatMessage"]] = relationship(
         "ChatMessage",
         back_populates="session",
@@ -55,7 +67,6 @@ class ChatMessage(Base):
     # "user" or "assistant" — matches LangChain's expected message role format.
     role: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # The message content.
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
     created_at: Mapped[str] = mapped_column(

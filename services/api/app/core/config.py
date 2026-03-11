@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Default points at the Docker service name "postgres".
     database_url: str = "postgresql+asyncpg://playbook:playbook@postgres:5432/playbook"
 
+    # Secret key for signing JWTs. Must be long and random in production.
+    # Generate a safe key: python -c "import secrets; print(secrets.token_hex(32))"
+    secret_key: str = "change-me-in-production-use-secrets-token-hex-32"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
