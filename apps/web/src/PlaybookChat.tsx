@@ -286,10 +286,10 @@ export default function PlaybookChat() {
           <div className="flex items-center justify-between">
             <button
               className="btn btn-ghost btn-xs"
-              onClick={() => setTheme(t => t === "synthwave" ? "retro" : "synthwave")}
+              onClick={() => setTheme(t => t === "dark" ? "light" : "dark")}
               title="Toggle theme"
             >
-              {theme === "synthwave" ? "🌙" : "☀️"}
+              {theme === "dark" ? "🌙" : "☀️"}
             </button>
             <button className="btn btn-ghost btn-xs text-error" onClick={logout}>
               Log out
