@@ -50,6 +50,7 @@ export default function PlaybookChat() {
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const canAsk = useMemo(() => !asking && question.trim().length > 0, [asking, question]);
 
   function logout() {
@@ -153,18 +154,21 @@ export default function PlaybookChat() {
     clearDocument();
   }
 
-  async function handleUpload() {
-    if (!file) return;
+  // Accepts either the staged file or a freshly-dropped file directly.
+  // Auto-fires on file select so users don't need a separate Upload button.
+  async function handleUpload(target?: File) {
+    const f = target ?? file;
+    if (!f) return;
     setUploading(true);
     setUploadError(null);
     try {
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", f);
       const res = await fetch("/api/documents", { method: "POST", headers: authHeader(), body: form });
       if (!res.ok) throw new Error((await res.text()) || "Upload failed (" + res.status + ")");
       const data = await res.json();
       setDocumentId(data.document_id);
-      setDocumentName(file.name);
+      setDocumentName(f.name);
       setChunksIndexed(data.chunks_indexed);
       setFile(null);
     } catch (err: unknown) {
@@ -307,7 +311,7 @@ export default function PlaybookChat() {
               onClick={() => setTheme(t => t === "synthwave" ? "retro" : "synthwave")}
               title="Toggle theme"
             >
-              {theme === "synthwave" ? "☀️ Light" : "🌙 Dark"}
+              {theme === "synthwave" ? "🌙" : "☀️"}
             </button>
             <button className="btn btn-ghost btn-xs text-error" onClick={logout}>
               Log out
@@ -317,62 +321,23 @@ export default function PlaybookChat() {
       </aside>
 
       {/* ── Main area ── */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div
+        className="flex-1 flex flex-col min-h-screen relative"
+        onDragOver={e => { e.preventDefault(); if (!documentId) setDragging(true); }}
+        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); }}
+        onDrop={e => {
+          e.preventDefault(); setDragging(false);
+          const f = e.dataTransfer.files[0];
+          if (f) handleUpload(f);
+        }}
+      >
 
-        {/* Upload banner */}
-        <div
-          className={
-            "border-b px-4 py-3 transition-all " +
-            (documentId
-              ? "bg-base-200 border-base-300"
-              : dragging
-              ? "bg-primary/10 border-primary border-dashed"
-              : "bg-base-200 border-base-300 border-dashed")
-          }
-          onDragOver={e => { e.preventDefault(); if (!documentId) setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={e => {
-            e.preventDefault(); setDragging(false);
-            if (documentId) return;
-            const f = e.dataTransfer.files[0];
-            if (f) setFile(f);
-          }}
-        >
-          {documentId ? (
-            <div className="flex items-center gap-3 text-sm">
-              <span className="text-success font-mono">✓ {documentName}</span>
-              {chunksIndexed != null && <span className="opacity-50">{chunksIndexed} chunks</span>}
-              <button className="btn btn-ghost btn-xs" onClick={clearDocument}>✕ clear</button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2 py-1">
-              <p className={"text-sm transition-colors " + (dragging ? "text-primary font-medium" : "opacity-50")}>
-                {dragging
-                  ? "Drop to select"
-                  : activePlaybook === "game-design"
-                  ? "📎 Drop your Game Design Document (PDF or .md) here, or use the picker below"
-                  : "📎 Drop a PDF or .md file here, or use the picker below"}
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  accept="application/pdf,.md"
-                  className="file-input file-input-bordered file-input-sm"
-                  onChange={e => setFile(e.target.files?.[0] ?? null)}
-                />
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={handleUpload}
-                  disabled={!file || uploading}
-                >
-                  {uploading ? <span className="loading loading-spinner loading-xs" /> : "Upload"}
-                </button>
-              </div>
-              {file && !uploading && <p className="text-xs opacity-60">Selected: {file.name}</p>}
-              {uploadError && <p className="text-error text-xs">{uploadError}</p>}
-            </div>
-          )}
-        </div>
+        {/* Drag-and-drop overlay — covers the whole chat area */}
+        {dragging && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-base-100/80 border-2 border-dashed border-primary rounded-lg pointer-events-none">
+            <p className="text-primary font-semibold text-lg">Drop to attach</p>
+          </div>
+        )}
 
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
@@ -427,18 +392,77 @@ export default function PlaybookChat() {
 
         {/* Input bar */}
         <div className="sticky bottom-0 bg-base-200 border-t border-base-300 px-4 py-3">
-          <div className="flex gap-2 max-w-3xl mx-auto">
-            <input
-              className="input input-bordered flex-1"
-              placeholder={documentId ? "Ask about your game..." : "Ask anything..."}
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && canAsk) handleAsk(); }}
-              disabled={asking}
-            />
-            <button className="btn btn-primary" onClick={handleAsk} disabled={!canAsk}>
-              Send
-            </button>
+          <div className="flex flex-col gap-2 max-w-3xl mx-auto">
+
+            {/* Attachment chip — shown when a file is staged or uploaded */}
+            {(uploading || documentId || uploadError) && (
+              <div className="flex items-center gap-2 px-1">
+                {uploading && (
+                  <div className="flex items-center gap-2 bg-base-300 rounded-lg px-3 py-1.5 text-sm">
+                    <span className="loading loading-spinner loading-xs" />
+                    <span className="opacity-60">Uploading…</span>
+                  </div>
+                )}
+                {documentId && !uploading && (
+                  <div className="flex items-center gap-2 bg-base-300 rounded-lg px-3 py-1.5 text-sm">
+                    <span className="text-success">📄</span>
+                    <span className="font-mono text-xs truncate max-w-48">{documentName}</span>
+                    {chunksIndexed != null && (
+                      <span className="opacity-40 text-xs">{chunksIndexed} chunks</span>
+                    )}
+                    <button
+                      className="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100"
+                      onClick={clearDocument}
+                      title="Remove attachment"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {uploadError && !uploading && (
+                  <div className="flex items-center gap-2 bg-error/10 text-error rounded-lg px-3 py-1.5 text-sm">
+                    <span>⚠️</span>
+                    <span className="text-xs">{uploadError}</span>
+                    <button className="btn btn-ghost btn-xs btn-circle" onClick={clearDocument}>✕</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Text input row */}
+            <div className="flex gap-2">
+              {/* Hidden file input — triggered by the paperclip button */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,.md"
+                className="hidden"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) { handleUpload(f); e.target.value = ""; }
+                }}
+              />
+              <button
+                className="btn btn-ghost btn-sm btn-circle self-end mb-0.5 opacity-60 hover:opacity-100"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !!documentId}
+                title={documentId ? "Remove current file first" : "Attach a PDF or .md file"}
+              >
+                📎
+              </button>
+              <input
+                className="input input-bordered flex-1"
+                placeholder={documentId ? "Ask about " + documentName + "…" : "Ask anything… or attach a GDD with 📎"}
+                value={question}
+                onChange={e => setQuestion(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canAsk) handleAsk(); }}
+                disabled={asking}
+              />
+              <button className="btn btn-primary self-end" onClick={handleAsk} disabled={!canAsk}>
+                Send
+              </button>
+            </div>
+
           </div>
         </div>
 
