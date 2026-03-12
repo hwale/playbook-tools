@@ -61,4 +61,5 @@ jobs:
             echo "--- Container status ---"
             docker compose ps
             echo "--- Health check ---"
-            curl -sf http://localhost:8000/health && echo "API healthy ✓"
+            # Port 8000 is internal to Docker — hit Caddy on 80 instead.
+            curl -sf http://localhost/health && echo "API healthy ✓"
