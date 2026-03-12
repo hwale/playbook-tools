@@ -47,6 +47,7 @@ not in the GDD. Fall back to your training knowledge or duckduckgo_search.
 Be specific and actionable. When generating content (items, events, mods, etc.),
 produce complete, ready-to-use suggestions the developer can drop directly into
 their project.""",
-    tool_names=["rag.retrieve", "web.search"],
+    tool_names=["rag.retrieve", "web.search", "pdf.parse"],
     model="gpt-4o-mini",
+    document_description="the developer's Game Design Document (GDD)",
 )

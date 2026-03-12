@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AgentFlowAnimation from "./AgentFlowAnimation";
 
 type AuthMode = "login" | "register";
 
@@ -62,11 +63,27 @@ export default function Landing() {
       <div className="hero flex-1">
         <div className="hero-content text-center flex-col gap-8 max-w-lg">
           <div>
-            <div className="text-6xl mb-4">🎮</div>
             <h1 className="text-5xl font-bold tracking-tight">Playbook Tools</h1>
             <p className="mt-4 text-lg opacity-60">
-              AI-powered game design assistant. Upload your GDD, ask anything.
+              Your document. The entire web. One conversation.
             </p>
+          </div>
+
+          <AgentFlowAnimation />
+
+          <div className="grid grid-cols-1 gap-3 w-full text-left">
+            <div className="rounded-xl border border-base-300 px-5 py-4">
+              <div className="font-semibold text-sm mb-1">Game Design</div>
+              <div className="text-sm opacity-60">
+                Upload your GDD and benchmark your mechanics, balance, and systems against published titles.
+              </div>
+            </div>
+            <div className="rounded-xl border border-base-300 px-5 py-4">
+              <div className="font-semibold text-sm mb-1">Finance</div>
+              <div className="text-sm opacity-60">
+                Upload a report and compare performance, strategy, and metrics against any public company's filings.
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3">
@@ -85,7 +102,7 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-3 gap-4 mt-4 text-sm opacity-50">
-            <div>🔍 RAG search your GDD</div>
+            <div>🔍 Semantic search your document</div>
             <div>🌐 Web research built-in</div>
             <div>⚡ Streaming responses</div>
           </div>

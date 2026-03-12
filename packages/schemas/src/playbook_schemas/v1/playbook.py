@@ -17,3 +17,6 @@ class PlaybookSpecV1(BaseModel):
     system_prompt: str
     tool_names: List[str]   # references to tools in the agent's tool registry
     model: str = "gpt-4o-mini"
+    # Used to generate the rag_retrieve tool's description at runtime so the LLM
+    # knows what kind of document it is searching (GDD, legal brief, financial report, etc.)
+    document_description: str = "the uploaded document"

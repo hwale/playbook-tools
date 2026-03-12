@@ -1,40 +1,43 @@
 import asyncio
 
-from langchain_core.tools import tool
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
 
 from app.tools.embeddings import embed_query
 from app.tools.vectorstore import search_document_chunks
 
 
-def make_rag_tool(document_id: str):
-    """
-    Returns a LangChain tool with document_id bound via closure.
+class _RagInput(BaseModel):
+    query: str = Field(
+        description="What to search for. Be specific — e.g. 'sniper rifle charge system' rather than 'weapons'."
+    )
+    top_k: int = Field(default=5, description="Number of document chunks to retrieve.")
 
-    Why a closure instead of a parameter in the tool schema:
-      The LLM should not need to know or remember the document_id — that's
-      infrastructure context, not a reasoning decision. By binding it here,
-      the LLM only sees `query` in the tool's input schema, which keeps the
-      tool description clean and prevents the LLM from getting confused about
-      what to pass.
 
-    Interview note: "We separate agent-visible interface from system context.
-    The LLM reasons about WHAT to search, not WHERE the index lives."
+def make_rag_tool(document_id: str, document_description: str = "the uploaded document") -> StructuredTool:
     """
-    @tool
+    Returns a LangChain StructuredTool with document_id bound via closure and
+    a description that is dynamically built from the playbook's document_description.
+
+    Why StructuredTool instead of @tool:
+      @tool reads the function docstring at decoration time — you can't inject a
+      runtime string into it. StructuredTool.from_function accepts an explicit
+      `description` parameter, so we can build it from the playbook's context.
+
+    Why document_id is not in the tool schema:
+      The LLM reasons about WHAT to search, not WHERE the index lives. Binding
+      document_id in the closure keeps the LLM-visible schema minimal and prevents
+      the model from second-guessing which document to query.
+    """
+    description = (
+        f"Search {document_description} for information relevant to the query. "
+        "Use this when the question is about THIS document's specific content — "
+        "its systems, data, decisions, or anything documented in the uploaded file. "
+        "Do NOT use this for questions about external sources or general knowledge. "
+        "Returns relevant text excerpts from the document, separated by ---"
+    )
+
     async def rag_retrieve(query: str, top_k: int = 5) -> str:
-        """
-        Search the uploaded game design document for information relevant to the query.
-        Use this whenever you need to understand the game's specific systems, mechanics,
-        or design decisions before giving advice or generating content.
-
-        Args:
-            query: What to search for. Be specific — e.g. "sniper rifle charge system"
-                   rather than just "weapons".
-            top_k: Number of document chunks to retrieve (default 5).
-
-        Returns:
-            Relevant text excerpts from the GDD, separated by ---
-        """
         vec = await embed_query(query)
 
         # search_document_chunks is synchronous (FAISS is CPU-bound).
@@ -52,4 +55,9 @@ def make_rag_tool(document_id: str):
         chunks = [h["text"] for h in hits]
         return "\n\n---\n\n".join(chunks)
 
-    return rag_retrieve
+    return StructuredTool.from_function(
+        coroutine=rag_retrieve,
+        name="rag_retrieve",
+        description=description,
+        args_schema=_RagInput,
+    )

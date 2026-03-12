@@ -2,7 +2,6 @@ import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 
-type Playbook = { name: string; description: string | null };
 type Step = { tool: string; input: Record<string, unknown> };
 type Message = { role: "user" | "assistant"; content: string; steps?: Step[]; streaming?: boolean };
 type Session = {
@@ -30,11 +29,10 @@ function relativeTime(iso: string): string {
 
 export default function PlaybookChat() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<"synthwave" | "retro">("retro");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
 
-  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
-  const [activePlaybook, setActivePlaybook] = useState<string>("");
+  const [activePlaybook] = useState<string>("game-design");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,17 +63,6 @@ export default function PlaybookChat() {
     setFile(null);
     setUploadError(null);
   }
-
-  // Fetch available playbooks on mount
-  useEffect(() => {
-    fetch("/api/agent/playbooks")
-      .then(r => r.json())
-      .then((data: Playbook[]) => {
-        setPlaybooks(data);
-        if (data.length > 0) setActivePlaybook(data[0].name);
-      })
-      .catch(() => {});
-  }, []);
 
   // Fetch sessions for the active playbook (called on playbook change and after sending messages)
   const fetchSessions = useCallback(async (playbookName: string) => {
@@ -265,7 +252,7 @@ export default function PlaybookChat() {
       {/* ── Sidebar ── */}
       <aside className="w-64 shrink-0 flex flex-col bg-base-200 border-r border-base-300 h-screen sticky top-0">
         <div className="px-4 py-3 border-b border-base-300">
-          <span className="font-bold text-base tracking-tight">🎮 Playbook Tools</span>
+          <span className="font-bold text-base tracking-tight">Playbook Tools</span>
         </div>
 
         <div className="px-3 py-2">
@@ -296,15 +283,6 @@ export default function PlaybookChat() {
         </div>
 
         <div className="border-t border-base-300 px-3 py-2 space-y-2">
-          {playbooks.length > 0 && (
-            <select
-              className="select select-bordered select-sm w-full"
-              value={activePlaybook}
-              onChange={e => setActivePlaybook(e.target.value)}
-            >
-              {playbooks.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
-            </select>
-          )}
           <div className="flex items-center justify-between">
             <button
               className="btn btn-ghost btn-xs"
@@ -344,8 +322,8 @@ export default function PlaybookChat() {
           {messages.length === 0 && (
             <div className="text-center opacity-40 text-sm mt-16">
               {documentId
-                ? "Ask anything about your game. " + documentName + " is loaded."
-                : "Ask anything — upload a GDD to ground answers in your game's systems."}
+                ? "Ask anything about your document. " + documentName + " is loaded."
+                : "Ask anything — upload a document to ground answers in your source material."}
             </div>
           )}
 
@@ -452,7 +430,7 @@ export default function PlaybookChat() {
               </button>
               <input
                 className="input input-bordered flex-1"
-                placeholder={documentId ? "Ask about " + documentName + "…" : "Ask anything… or attach a GDD with 📎"}
+                placeholder={documentId ? "Ask about " + documentName + "…" : "Ask anything… or attach a document with 📎"}
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && canAsk) handleAsk(); }}
