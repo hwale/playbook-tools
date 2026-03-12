@@ -80,7 +80,26 @@ class _FAISSStore:
         query_embedding: list[float],
         document_id: str,
         top_k: int = 5,
+        max_distance: float = 1.0,
     ) -> list[dict]:
+        """
+        Return up to top_k chunks from document_id whose L2 distance to the
+        query vector is <= max_distance.
+
+        Why a threshold?  IndexFlatL2 always returns exactly top_k results —
+        it has no concept of "no match".  Without a cutoff the agent receives
+        the least-bad chunks even when the query is completely unrelated to the
+        document (e.g. searching a GDD for a different game entirely).
+
+        Threshold choice — empirical rule of thumb for text-embedding-3-small
+        (1536-dim, unit-normalised outputs):
+          < 0.3   very strong match
+          0.3–0.7 plausible relevance
+          > 1.0   effectively unrelated
+
+        1.0 is intentionally permissive for a first cut.  Tune down toward 0.7
+        if you still see off-topic chunks slipping through.
+        """
         if self.index.ntotal == 0:
             return []
 
@@ -97,6 +116,11 @@ class _FAISSStore:
             if idx == -1:
                 # FAISS returns -1 for empty result slots.
                 continue
+            # Relevance gate: drop chunks that are too far from the query.
+            # This is the primary fix for "agent retrieves junk when the topic
+            # isn't in the document at all."
+            if float(dist) > max_distance:
+                break  # distances are sorted ascending — no point scanning further
             if self.meta["doc_ids"][idx] == document_id:
                 results.append({
                     "text": self.meta["chunks"][idx],

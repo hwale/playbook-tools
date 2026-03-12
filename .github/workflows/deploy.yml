@@ -1,0 +1,64 @@
+name: Deploy to EC2
+
+# Trigger: every push to main (after PR merge or direct push).
+# To deploy manually: Actions tab → "Deploy to EC2" → "Run workflow".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # manual trigger button in GitHub UI
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    # Prevents two deploys running simultaneously if you push twice quickly.
+    concurrency:
+      group: production
+      cancel-in-progress: false   # let in-flight deploy finish; queue the next
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          # Script runs on the EC2 instance.
+          # Each line is a separate command; the step fails if any line exits non-zero.
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # ── 1. Write the .env file from GitHub Secrets ───────────────────
+            # This replaces whatever was on disk, so secrets are always in sync.
+            # The file is never committed to git — only lives on the server.
+            cat > services/api/.env << 'ENVEOF'
+            ENVIRONMENT=production
+            LOG_LEVEL=info
+            APP_NAME=Playbook Tools API
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DATA_DIR=/repo/.data
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
+            ENVEOF
+
+            # ── 2. Pull latest code ──────────────────────────────────────────
+            git pull origin main
+
+            # ── 3. Rebuild containers (only changed layers rebuild) ──────────
+            # --build   : force image rebuild (picks up code + dep changes)
+            # -d        : detached — don't block the SSH session
+            # --remove-orphans : clean up containers for removed services
+            docker compose up --build -d --remove-orphans
+
+            # ── 4. Run any pending DB migrations ────────────────────────────
+            # -T disables pseudo-TTY — required in non-interactive SSH sessions.
+            # The api container is already healthy (depends_on + healthcheck).
+            docker compose exec -T api alembic upgrade head
+
+            # ── 5. Quick sanity check ────────────────────────────────────────
+            echo "--- Container status ---"
+            docker compose ps
+            echo "--- Health check ---"
+            curl -sf http://localhost:8000/health && echo "API healthy ✓"

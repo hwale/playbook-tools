@@ -38,3 +38,9 @@ Thumbs.db
 # Local storage (RAG, uploads, etc)
 # =========================
 .data/
+
+# =========================
+# Claude Code (editor-local settings, worktrees)
+# =========================
+.claude/settings.local.json
+.claude/worktrees/

@@ -1,0 +1,12 @@
+playbook-tools.com, www.playbook-tools.com {
+    # Automatic HTTPS: Caddy fetches and renews Let's Encrypt certs.
+    # HTTP → HTTPS redirect happens automatically — no extra config needed.
+
+    reverse_proxy web:80 {
+        # Raise the read timeout so SSE streams (agent responses) don't get
+        # cut off mid-token. Agent can take 30–60s on long responses.
+        transport http {
+            read_timeout 120s
+        }
+    }
+}

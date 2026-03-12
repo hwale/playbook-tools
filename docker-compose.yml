@@ -49,14 +49,28 @@ services:
     build:
       context: ./apps/web
       dockerfile: Dockerfile.prod
-    ports:
-      - "80:80"
+    # No external port — web is internal-only. Caddy is the only public entry point.
     depends_on:
       api:
         condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"    # HTTP (Let's Encrypt challenge + redirect to HTTPS)
+      - "443:443"  # HTTPS
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro  # config from repo — no SSH needed to change it
+      - caddy_data:/data                      # Let's Encrypt certs — must persist across restarts
+      - caddy_config:/config                  # Caddy internal state cache
+    depends_on:
+      - web
+    restart: unless-stopped
 
 # Named volumes are managed by Docker and persist independently of containers.
 # `docker compose down` removes containers but NOT volumes.
 # `docker compose down -v` removes both — use only when you want a clean slate.
 volumes:
   postgres_data:
+  caddy_data:    # Let's Encrypt certs
+  caddy_config:  # Caddy config cache
