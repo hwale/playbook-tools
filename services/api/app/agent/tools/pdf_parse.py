@@ -4,7 +4,7 @@ from pathlib import Path
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.tools.pdf import extract_pages_from_pdf_bytes
 
 
@@ -30,7 +30,7 @@ def make_pdf_parse_tool(document_id: str) -> StructuredTool:
     The document_id is bound via closure (same pattern as make_rag_tool) so the
     LLM schema stays minimal — the agent only decides which pages to read.
     """
-    upload_dir: Path = settings.upload_dir
+    upload_dir: Path = get_settings().upload_dir
 
     async def pdf_parse(pages: list[int] | None = None) -> str:
         pdf_path = upload_dir / f"{document_id}.pdf"
