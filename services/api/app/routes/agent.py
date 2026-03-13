@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.graph import build_agent, run_agent
 from app.agent.playbooks import PLAYBOOKS
+from app.agent.router import classify_playbook
 from app.core.deps import get_optional_user
 from app.db import get_db
 from app.models.chat import ChatMessage, ChatSession
@@ -28,7 +29,9 @@ def list_playbooks():
 
 class AgentQueryRequest(BaseModel):
     question: str
-    playbook_name: str = "game-design"
+    # None = auto-route: the router LLM picks the best playbook based on the query.
+    # Provide a name to skip routing and use a specific playbook directly.
+    playbook_name: str | None = None
     document_id: str | None = None
     session_id: str | None = None  # if provided, loads chat history + saves messages
 
@@ -40,9 +43,10 @@ async def agent_query(req: AgentQueryRequest):
     Does not persist messages — use /query/stream for production use.
     """
     try:
+        playbook_name = req.playbook_name or await classify_playbook(req.question)
         return await run_agent(
             question=req.question,
-            playbook_name=req.playbook_name,
+            playbook_name=playbook_name,
             document_id=req.document_id,
         )
     except KeyError as e:
@@ -66,10 +70,11 @@ async def agent_query_stream(
       - Saves the new user message + assistant response to the DB
       - Sets the session title from the first user message
 
-    Event types emitted:
-      {"type": "tool_start", "tool": "<name>", "input": {...}}
-      {"type": "token",      "content": "<text>"}
-      {"type": "error",      "message": "<text>"}
+    Event types emitted (in order):
+      {"type": "playbook_selected", "playbook": "<name>"}   <- first event; tells the UI which playbook ran
+      {"type": "tool_start",        "tool": "<name>", "input": {...}}
+      {"type": "token",             "content": "<text>"}
+      {"type": "error",             "message": "<text>"}
       {"type": "done"}
     """
     # Load chat history outside the generator so we have a DB session.
@@ -111,7 +116,11 @@ async def agent_query_stream(
 
     async def event_stream():
         try:
-            graph = build_agent(req.playbook_name, req.document_id)
+            playbook_name = req.playbook_name or await classify_playbook(req.question)
+            # Emit which playbook was selected so the UI can display it.
+            yield f"data: {json.dumps({'type': 'playbook_selected', 'playbook': playbook_name})}\n\n"
+
+            graph = build_agent(playbook_name, req.document_id)
 
             # Build the full message list: prior history + current question
             messages = prior_messages + [HumanMessage(content=req.question)]

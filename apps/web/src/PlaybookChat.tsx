@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 
 type Step = { tool: string; input: Record<string, unknown> };
-type Message = { role: "user" | "assistant"; content: string; steps?: Step[]; streaming?: boolean };
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  steps?: Step[];
+  streaming?: boolean;
+  playbook?: string;   // which playbook the router selected for this response
+};
 type Session = {
   session_id: string;
   playbook_name: string | null;
@@ -32,7 +38,6 @@ export default function PlaybookChat() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
 
-  const [activePlaybook] = useState<string>("game-design");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -64,14 +69,10 @@ export default function PlaybookChat() {
     setUploadError(null);
   }
 
-  // Fetch sessions for the active playbook (called on playbook change and after sending messages)
-  const fetchSessions = useCallback(async (playbookName: string) => {
-    if (!playbookName) return;
+  // Fetch all sessions (router picks the playbook per-query, so sessions aren't scoped to one playbook)
+  const fetchSessions = useCallback(async () => {
     try {
-      const res = await fetch(
-        "/api/chat/sessions?playbook_name=" + encodeURIComponent(playbookName),
-        { headers: authHeader() }
-      );
+      const res = await fetch("/api/chat/sessions", { headers: authHeader() });
       if (res.status === 401) { logout(); return; }
       if (!res.ok) return;
       setSessions(await res.json());
@@ -79,15 +80,10 @@ export default function PlaybookChat() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // When playbook switches, reload sessions and clear current chat
+  // Load sessions on mount
   useEffect(() => {
-    if (activePlaybook) {
-      fetchSessions(activePlaybook);
-      setActiveSessionId(null);
-      setMessages([]);
-      clearDocument();
-    }
-  }, [activePlaybook, fetchSessions]);
+    fetchSessions();
+  }, [fetchSessions]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -116,13 +112,14 @@ export default function PlaybookChat() {
     } catch {}
   }
 
-  // Create a new DB session (called lazily on first message if no session exists)
+  // Create a new DB session (called lazily on first message if no session exists).
+  // playbook_name is omitted — the router will determine it from the query content.
   async function createSession(): Promise<string | null> {
     try {
       const res = await fetch("/api/chat/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeader() },
-        body: JSON.stringify({ playbook_name: activePlaybook, document_id: documentId ?? undefined }),
+        body: JSON.stringify({ document_id: documentId ?? undefined }),
       });
       if (res.status === 401) { logout(); return null; }
       if (!res.ok) return null;
@@ -194,7 +191,7 @@ export default function PlaybookChat() {
         headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({
           question: q,
-          playbook_name: activePlaybook,
+          // playbook_name omitted → backend router picks the best playbook
           document_id: documentId ?? undefined,
           session_id: sessionId ?? undefined,
         }),
@@ -215,10 +212,16 @@ export default function PlaybookChat() {
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
-          let event: { type: string; tool?: string; input?: Record<string, unknown>; content?: string; message?: string };
+          let event: { type: string; tool?: string; input?: Record<string, unknown>; content?: string; message?: string; playbook?: string };
           try { event = JSON.parse(line.slice(6)); } catch { continue; }
 
-          if (event.type === "tool_start") {
+          if (event.type === "playbook_selected") {
+            setMessages(prev => {
+              const last = prev[prev.length - 1];
+              if (!last || last.role !== "assistant") return prev;
+              return [...prev.slice(0, -1), { ...last, playbook: event.playbook }];
+            });
+          } else if (event.type === "tool_start") {
             setMessages(prev => {
               const last = prev[prev.length - 1];
               if (!last || last.role !== "assistant") return prev;
@@ -235,7 +238,7 @@ export default function PlaybookChat() {
           } else if (event.type === "done") {
             updateLast({ streaming: false });
             // Refresh sidebar so new session title appears after first message
-            if (activePlaybook) fetchSessions(activePlaybook);
+            fetchSessions();
           }
         }
       }
@@ -338,6 +341,13 @@ export default function PlaybookChat() {
                   {m.streaming && !m.content && !m.steps?.length && (
                     <div className="chat chat-start">
                       <div className="chat-bubble"><span className="loading loading-dots loading-sm" /></div>
+                    </div>
+                  )}
+                  {m.playbook && (
+                    <div className="chat chat-start">
+                      <div className="badge badge-outline badge-sm opacity-40 mb-1 ml-1">
+                        {m.playbook}
+                      </div>
                     </div>
                   )}
                   {m.steps && m.steps.length > 0 && (

@@ -35,6 +35,9 @@ dependencies = [
   "langchain-community>=0.2.0",
   "langgraph>=0.1.0",
   "ddgs>=9.0.0",
+  # pyyaml: load playbook definitions from .yaml files so new playbooks
+  # can be added by dropping a file — no code change or redeploy needed.
+  "pyyaml>=6.0",
   # --- Auth ---
   # bcrypt: password hashing. Deliberately slow to resist brute-force attacks.
   # Using the bcrypt package directly — passlib has compatibility issues with bcrypt>=4.0.

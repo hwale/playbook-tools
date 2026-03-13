@@ -73,15 +73,15 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 gap-3 w-full text-left">
             <div className="rounded-xl border border-base-300 px-5 py-4">
-              <div className="font-semibold text-sm mb-1">Game Design</div>
-              <div className="text-sm opacity-60">
-                Upload your GDD and benchmark your mechanics, balance, and systems against published titles.
-              </div>
-            </div>
-            <div className="rounded-xl border border-base-300 px-5 py-4">
               <div className="font-semibold text-sm mb-1">Finance</div>
               <div className="text-sm opacity-60">
                 Upload a report and compare performance, strategy, and metrics against any public company's filings.
+              </div>
+            </div>
+            <div className="rounded-xl border border-base-300 px-5 py-4">
+              <div className="font-semibold text-sm mb-1">Game Design</div>
+              <div className="text-sm opacity-60">
+                Upload your GDD and benchmark your mechanics, balance, and systems against published titles.
               </div>
             </div>
           </div>

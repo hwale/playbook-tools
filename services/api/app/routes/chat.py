@@ -18,7 +18,9 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 class CreateSessionRequest(BaseModel):
-    playbook_name: str
+    # None when auto-routing is active — playbook is determined by the agent router,
+    # not the client. The session stores it as null until we know which playbook ran.
+    playbook_name: str | None = None
     document_id: str | None = None
 
 
@@ -66,21 +68,22 @@ async def create_session(
 
 @router.get("/sessions", response_model=list[SessionResponse])
 async def list_sessions(
-    playbook_name: str = Query(...),
+    playbook_name: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     user: User | None = Depends(get_optional_user),
 ):
     """
-    List sessions for a playbook, newest first.
+    List sessions, newest first.
 
+    If playbook_name is provided, filters to that playbook only.
+    If omitted, returns all sessions (used when auto-routing is active).
     Filters by user_id when authenticated so users only see their own sessions.
-    In unauthenticated dev mode, returns sessions with no owner.
     """
-    stmt = (
-        select(ChatSession)
-        .where(ChatSession.playbook_name == playbook_name)
-        .order_by(ChatSession.created_at.desc())
-    )
+    stmt = select(ChatSession).order_by(ChatSession.created_at.desc())
+
+    if playbook_name is not None:
+        stmt = stmt.where(ChatSession.playbook_name == playbook_name)
+
     if user:
         stmt = stmt.where(ChatSession.user_id == user.id)
     else:
