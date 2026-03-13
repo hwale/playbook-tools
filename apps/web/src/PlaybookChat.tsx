@@ -35,8 +35,13 @@ function relativeTime(iso: string): string {
 
 export default function PlaybookChat() {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
+  const [theme, setTheme] = useState<"light" | "dark">(
+    () => (localStorage.getItem("theme") as "light" | "dark") ?? "light"
+  );
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
