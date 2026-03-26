@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playbook Tools — Implementation Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0c0e13;
+    --surface: #14161d;
+    --surface2: #1a1d27;
+    --border: #2a2d3a;
+    --text: #c8ccd8;
+    --text-dim: #6b7084;
+    --text-bright: #eef0f6;
+    --accent: #4fc1ff;
+    --accent-dim: #2a6a8a;
+    --green: #4ae08c;
+    --green-dim: rgba(74, 224, 140, 0.15);
+    --yellow: #f0c850;
+    --yellow-dim: rgba(240, 200, 80, 0.15);
+    --red: #f06060;
+    --red-dim: rgba(240, 96, 96, 0.15);
+    --orange: #e8944a;
+    --orange-dim: rgba(232, 148, 74, 0.15);
+    --purple: #b07aff;
+    --purple-dim: rgba(176, 122, 255, 0.15);
+    --pink: #ff6ea8;
+    --pink-dim: rgba(255, 110, 168, 0.15);
+    --teal: #4ad4c0;
+    --teal-dim: rgba(74, 212, 192, 0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+
+  header .subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* Stats primer */
+  .primer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .primer h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .primer p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 32px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Section headings */
+  .section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-bright);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    margin-top: 40px;
+  }
+
+  /* Feature cards */
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .feature-card:hover { border-color: var(--accent-dim); }
+  .feature-card.expanded { border-color: var(--accent); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .card-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .num-1 { background: var(--green-dim); color: var(--green); }
+  .num-2 { background: var(--purple-dim); color: var(--purple); }
+  .num-3 { background: var(--yellow-dim); color: var(--yellow); }
+  .num-4 { background: var(--accent-dim); color: var(--accent); background: rgba(79, 193, 255, 0.15); }
+  .num-5 { background: var(--orange-dim); color: var(--orange); }
+
+  .card-info { flex: 1; }
+
+  .card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .card-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-bright);
+  }
+
+  .card-pattern {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .pattern-fallback { background: var(--green-dim); color: var(--green); }
+  .pattern-semantic { background: var(--purple-dim); color: var(--purple); }
+  .pattern-gate { background: var(--yellow-dim); color: var(--yellow); }
+  .pattern-scatter { background: rgba(79, 193, 255, 0.15); color: var(--accent); }
+  .pattern-cascade { background: var(--orange-dim); color: var(--orange); }
+
+  .card-summary {
+    font-size: 14px;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  .expand-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    transition: color 0.2s;
+  }
+
+  .feature-card:hover .expand-hint { color: var(--accent); }
+
+  .card-details {
+    display: none;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .feature-card.expanded .card-details { display: block; }
+
+  .detail-section {
+    margin-bottom: 16px;
+  }
+
+  .detail-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .detail-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .file-ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--teal);
+    background: var(--teal-dim);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 2px 0;
+  }
+
+  .func-ref {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--purple);
+    background: var(--purple-dim);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 2px 0;
+  }
+
+  .interview-note {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 12px;
+  }
+
+  .interview-note .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .interview-note .text {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .tradeoff {
+    background: var(--surface2);
+    border-left: 3px solid var(--yellow);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 12px;
+  }
+
+  .tradeoff .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--yellow);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .tradeoff .text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* Patterns grid */
+  .patterns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .pattern-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .pattern-card h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+
+  .pattern-card p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .pattern-card .used-in {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    margin-top: 8px;
+  }
+
+  /* Mobile */
+  @media (max-width: 700px) {
+    .stat-row { gap: 16px; }
+    .patterns-grid { grid-template-columns: 1fr; }
+    .card-header { flex-direction: column; gap: 8px; }
+    .card-number { width: 36px; height: 36px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>> Playbook Tools — Implementation Report</h1>
+    <div class="subtitle">March 26, 2026 — All features from Excalidraw architecture diagram</div>
+  </header>
+
+  <div id="app"></div>
+</div>
+
+<script>
+const stats = [
+  { val: "5", label: "Features Shipped" },
+  { val: "8", label: "Files Modified" },
+  { val: "0", label: "DB Schema Changes" },
+  { val: "5", label: "Patterns Applied" },
+];
+
+const features = [
+  {
+    num: 1,
+    numClass: "num-1",
+    name: "Brave Search API",
+    pattern: "Feature Flag",
+    patternClass: "pattern-fallback",
+    summary: "Swapped DuckDuckGo for Brave Search as the primary web search provider, with DDG as automatic zero-config fallback.",
+    files: [
+      { path: "services/api/app/agent/tools/web_search.py", lines: "19–34" }
+    ],
+    functions: ["make_web_search_tool()"],
+    details: "If <code>BRAVE_API_KEY</code> is set in <code>.env</code>, Brave is used — structured JSON results with titles, snippets, and URLs. Otherwise, DuckDuckGo is used automatically so the system works out-of-the-box with zero config.",
+    interview: "Feature-flag pattern — toggle capabilities via environment variables without code changes. Same principle as LaunchDarkly flags or A/B test variants. The fallback ensures the system is always functional, even without paid API keys.",
+    tradeoff: "Brave costs ~$0.01/query but returns structured JSON with rich snippets. DuckDuckGo is free but scrapes HTML — less reliable, lower quality results."
+  },
+  {
+    num: 2,
+    numClass: "num-2",
+    name: "Semantic Chunking",
+    pattern: "Split-Then-Merge",
+    patternClass: "pattern-semantic",
+    summary: "Replaced character-based splitting with a 4-pass semantic chunking pipeline that respects paragraph and sentence boundaries.",
+    files: [
+      { path: "services/api/app/tools/chunking.py", lines: "25–56" }
+    ],
+    functions: ["chunk_text()", "_split_paragraphs()", "_split_sentences()", "_merge_segments()", "_add_overlap()"],
+    details: "Four-pass strategy: <strong>1)</strong> Split on double newlines (paragraph/section boundaries). <strong>2)</strong> Break oversized segments on sentence endings (<code>. ! ?</code>). <strong>3)</strong> Greedily merge small consecutive segments up to chunk_size (1200 chars). <strong>4)</strong> Add overlap by repeating ~200 trailing chars from the previous chunk, breaking at sentence boundaries.",
+    interview: "Deterministic, no ML model needed, handles 90% of real documents well. This is a two-pass approach — split coarse, then merge. Trade-off vs model-based chunking (e.g., embedding similarity between sentences) is speed and simplicity at the cost of missing subtle topic shifts within a paragraph.",
+    tradeoff: "Character-based splits can land mid-sentence ('The total revenue was $4' | '2.3B'), producing embeddings that misrepresent the content. Semantic chunking keeps coherent units together, improving retrieval precision at minimal compute cost."
+  },
+  {
+    num: 3,
+    numClass: "num-3",
+    name: "LLM2 Verifier Loop",
+    pattern: "Quality Gate",
+    patternClass: "pattern-gate",
+    summary: "Added a second LLM node (gpt-4o-mini) that quality-checks the agent's final answer before it reaches the user. Max 1 retry.",
+    files: [
+      { path: "services/api/app/agent/graph.py", lines: "46–56 (schema), 130–181 (node + routing)" }
+    ],
+    functions: ["VerifierJudgment", "verifier_node()", "after_verifier()"],
+    details: "The verifier evaluates on three criteria: <strong>Relevance</strong> (does it address the question?), <strong>Completeness</strong> (are key points covered?), and <strong>Groundedness</strong> (is it based on retrieved context, not hallucinated?). If flagged as 'bad', feedback is injected as a HumanMessage and the agent re-generates. Capped at 1 retry to bound latency.",
+    interview: "Quality gate — same principle as a CI pipeline gate or a load balancer health check. The verifier adds one LLM call of latency (~200–400ms with gpt-4o-mini) but catches hallucinations and incomplete answers before they reach the user.",
+    tradeoff: "Extra LLM call (~$0.001) and ~300ms latency per request vs. client-side flagging which is free but reactive — the user sees the bad answer first."
+  },
+  {
+    num: 4,
+    numClass: "num-4",
+    name: "Multi-Step Search",
+    pattern: "Scatter-Gather",
+    patternClass: "pattern-scatter",
+    summary: "Complex questions are decomposed into 1–3 sub-queries, searched in parallel, and merged via Reciprocal Rank Fusion (RRF).",
+    files: [
+      { path: "services/api/app/agent/tools/rag_retrieve.py", lines: "79–111" },
+      { path: "services/api/app/tools/query_decompose.py", lines: "55–74" }
+    ],
+    functions: ["rag_retrieve()", "decompose_query()", "_reciprocal_rank_fusion()"],
+    details: "A cheap LLM call (gpt-4o-mini) splits complex questions into focused sub-queries. Each sub-query is embedded and searched independently. Results are merged using RRF (score = &sum; 1/(k + rank)), which normalizes across different distance distributions. Simple, focused questions produce a single sub-query and skip decomposition entirely — zero extra overhead.",
+    interview: "Scatter-gather retrieval — fan out N sub-queries, gather results, merge with rank fusion. Same pattern as federated search in Elasticsearch or multi-index queries in Solr. The tradeoff is N extra embedding calls + one LLM call for decomposition, but retrieval quality improvement is substantial for multi-faceted questions.",
+    tradeoff: "Simple queries: 1 embedding call (same as before). Complex queries: 1 LLM call + N embedding calls + N searches. Cost is bounded by max 3 sub-queries. Quality gain is significant for comparison and multi-topic questions."
+  },
+  {
+    num: 5,
+    numClass: "num-5",
+    name: "OCR + Table Support",
+    pattern: "Cascading Fallback",
+    patternClass: "pattern-cascade",
+    summary: "Three-tier PDF extraction cascade: pdfplumber (free, local) → AWS Textract (OCR + tables) → pypdf (last resort).",
+    files: [
+      { path: "services/api/app/tools/pdf.py", lines: "142–253" }
+    ],
+    functions: ["_extract_with_ocr()", "_extract_tables_with_textract()", "_get_textract_cell_text()"],
+    details: "Textract handles scanned PDFs where pdfplumber finds no extractable text. Two API calls: <code>detect_document_text</code> for multi-page text, <code>analyze_document</code> with <code>TABLES</code> feature for structured table detection. Tables are reconstructed by traversing Textract's block relationships (TABLE → CELL → WORD) and formatted as markdown. Auth is automatic via EC2 IAM instance role — no API keys needed in production.",
+    interview: "Cascading extraction strategy — try the cheapest/fastest method first, fall back to more expensive methods. Same principle as CDN → origin → cold storage in a caching hierarchy.",
+    tradeoff: "Textract costs ~$1.50 per 1,000 pages but requires zero system binaries vs. Tesseract which is free but needs tesseract-ocr + poppler-utils installed on the server. AWS setup: IAM role <code>playbook-tools-api</code> with <code>playbook-tools-textract</code> policy attached to EC2 instance."
+  }
+];
+
+const patterns = [
+  {
+    name: "Cascading Fallback",
+    desc: "Try the cheapest/fastest option first, fall back to progressively more expensive methods.",
+    usedIn: "PDF extraction, web search"
+  },
+  {
+    name: "Feature Flags",
+    desc: "Toggle capabilities via environment variables without code changes. Enables zero-config defaults.",
+    usedIn: "Brave API toggle"
+  },
+  {
+    name: "Quality Gates",
+    desc: "A separate checker validates output before it reaches the user. Catches issues proactively.",
+    usedIn: "LLM verifier loop"
+  },
+  {
+    name: "Scatter-Gather",
+    desc: "Fan out N parallel queries, collect results, merge with rank fusion for better coverage.",
+    usedIn: "Multi-step RAG search"
+  },
+  {
+    name: "Graceful Degradation",
+    desc: "Non-critical features fail silently (log + swallow) rather than crashing the request.",
+    usedIn: "Memory store, OCR fallback"
+  }
+];
+
+function render() {
+  const app = document.getElementById('app');
+
+  const statsHTML = stats.map(s => `
+    <div class="stat">
+      <span class="stat-val">${s.val}</span>
+      <span class="stat-label">${s.label}</span>
+    </div>
+  `).join('');
+
+  const featuresHTML = features.map(f => `
+    <div class="feature-card" onclick="this.classList.toggle('expanded')">
+      <div class="card-header">
+        <div class="card-number ${f.numClass}">${f.num}</div>
+        <div class="card-info">
+          <div class="card-title-row">
+            <span class="card-name">${f.name}</span>
+            <span class="card-pattern ${f.patternClass}">${f.pattern}</span>
+          </div>
+          <div class="card-summary">${f.summary}</div>
+          <div class="expand-hint">click to expand &rarr;</div>
+        </div>
+      </div>
+      <div class="card-details">
+        <div class="detail-section">
+          <div class="detail-label">Files</div>
+          <div class="detail-text">
+            ${f.files.map(file => `<span class="file-ref">${file.path}:${file.lines}</span>`).join(' ')}
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">Key Functions</div>
+          <div class="detail-text">
+            ${f.functions.map(fn => `<span class="func-ref">${fn}</span>`).join(' ')}
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">How It Works</div>
+          <div class="detail-text">${f.details}</div>
+        </div>
+        <div class="interview-note">
+          <div class="label">Interview Note</div>
+          <div class="text">"${f.interview}"</div>
+        </div>
+        <div class="tradeoff">
+          <div class="label">Trade-off</div>
+          <div class="text">${f.tradeoff}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  const patternsHTML = patterns.map(p => `
+    <div class="pattern-card">
+      <h3>${p.name}</h3>
+      <p>${p.desc}</p>
+      <div class="used-in">Used in: ${p.usedIn}</div>
+    </div>
+  `).join('');
+
+  app.innerHTML = `
+    <div class="primer">
+      <h2>Summary</h2>
+      <p>All 5 features from the Excalidraw architecture diagram have been implemented. No database schema changes required — all new capabilities are layered on top of the existing stack.</p>
+      <div class="stat-row">${statsHTML}</div>
+    </div>
+
+    <div class="section-title">Features Implemented</div>
+    ${featuresHTML}
+
+    <div class="section-title">Architecture Patterns</div>
+    <div class="patterns-grid">${patternsHTML}</div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

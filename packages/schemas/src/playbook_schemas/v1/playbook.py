@@ -20,3 +20,7 @@ class PlaybookSpecV1(BaseModel):
     # Used to generate the rag_retrieve tool's description at runtime so the LLM
     # knows what kind of document it is searching (GDD, legal brief, financial report, etc.)
     document_description: str = "the uploaded document"
+    # When True, a second LLM (the verifier) checks the agent's final answer
+    # for quality. If the answer is judged incomplete or hallucinated, the agent
+    # re-generates with the verifier's feedback. Max 1 retry to cap latency.
+    verifier_enabled: bool = False

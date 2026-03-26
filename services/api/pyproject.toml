@@ -8,6 +8,13 @@ dependencies = [
   "pydantic-settings>=2.1",
   "uvicorn[standard]>=0.27",
   "pypdf>=4.0",
+  # --- PDF processing (OCR + tables) ---
+  # pdfplumber: extracts text AND tables from digital PDFs with layout awareness.
+  # Wraps pdfminer.six — better table detection than pypdf.
+  "pdfplumber>=0.10",
+  # boto3: AWS SDK. Used for Textract OCR on scanned PDFs.
+  # On EC2, auth is automatic via IAM instance role — no API keys needed.
+  "boto3>=1.34",
   # --- Vector search ---
   # faiss-cpu is Facebook's similarity search library. Runs in-process (no server).
   # Use faiss-gpu if you have a CUDA-capable GPU and need to search millions of vectors.
@@ -27,13 +34,15 @@ dependencies = [
   # --- Agent (LangChain + LangGraph) ---
   # langchain: core abstractions (tools, messages, chat models)
   # langchain-openai: ChatOpenAI model wrapper
-  # langchain-community: third-party integrations (DuckDuckGo search)
+  # langchain-community: third-party integrations (Brave Search, DuckDuckGo fallback)
   # langgraph: graph-based agent runtime — provides create_react_agent
-  # duckduckgo-search: free web search, no API key required
+  # brave-search: structured web search API (set BRAVE_API_KEY in .env)
+  # duckduckgo-search: free fallback when no Brave key is configured
   "langchain>=0.2.0",
   "langchain-openai>=0.1.0",
   "langchain-community>=0.2.0",
   "langgraph>=0.1.0",
+  "brave-search>=0.3.0",
   "ddgs>=9.0.0",
   # pyyaml: load playbook definitions from .yaml files so new playbooks
   # can be added by dropping a file — no code change or redeploy needed.

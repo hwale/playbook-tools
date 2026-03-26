@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     log_level: str = "info"
 
     openai_api_key: str | None = None
+    brave_api_key: str | None = None
+
+    # AWS region for Textract OCR. On EC2, credentials come from the instance
+    # IAM role automatically — no access keys needed. Set AWS_REGION in .env
+    # or leave as default.
+    aws_region: str = "us-east-1"
 
     # Root data directory — all sub-paths are derived from this.
     # Override via DATA_DIR env var so nothing is hardcoded in route files.
@@ -42,6 +48,10 @@ class Settings(BaseSettings):
     @property
     def faiss_dir(self) -> Path:
         return self.data_dir / "faiss"
+
+    @property
+    def faiss_memory_dir(self) -> Path:
+        return self.data_dir / "faiss_memory"
 
 
 @lru_cache

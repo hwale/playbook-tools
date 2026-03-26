@@ -58,7 +58,8 @@ async def upload_document(
 
         if not text:
             raise ValueError(
-                "No extractable text found. This may be a scanned PDF (OCR not implemented yet)."
+                "No extractable text found. The PDF may be image-only and OCR "
+                "could not process it. Ensure Tesseract and Poppler are installed."
             )
 
         chunks = chunk_text(text, chunk_size=1200, overlap=200)

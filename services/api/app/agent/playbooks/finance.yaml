@@ -3,6 +3,7 @@ name: finance
 description: "Financial analysis assistant for earnings reports, 10-Ks, balance sheets, income statements, and market comparisons."
 model: gpt-4o-mini
 document_description: "the uploaded financial document (earnings report, 10-K, balance sheet, or filing)"
+verifier_enabled: true
 tool_names:
   - rag.retrieve
   - web.search

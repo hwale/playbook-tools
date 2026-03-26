@@ -16,6 +16,7 @@ from app.core.deps import get_optional_user
 from app.db import get_db
 from app.models.chat import ChatMessage, ChatSession
 from app.models.user import User
+from app.services.memory import retrieve_long_term_memory, store_qa_memory
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,21 @@ async def agent_query_stream(
                 else:
                     prior_messages.append(AIMessage(content=msg.content))
 
+    # Retrieve long-term memory: search past Q&A pairs for context.
+    # Only for authenticated users — anonymous users have no memory.
+    long_term_memory: list[dict] = []
+    if user:
+        try:
+            long_term_memory = await retrieve_long_term_memory(
+                db,
+                user_id=str(user.id),
+                question=req.question,
+                current_session_id=req.session_id,
+                top_k=3,
+            )
+        except Exception:
+            logger.exception("Failed to retrieve long-term memory (non-fatal)")
+
     # Capture full assistant response to save after streaming completes.
     # We collect tokens as they arrive, then persist as one DB row.
     accumulated: list[str] = []
@@ -120,7 +136,7 @@ async def agent_query_stream(
             # Emit which playbook was selected so the UI can display it.
             yield f"data: {json.dumps({'type': 'playbook_selected', 'playbook': playbook_name})}\n\n"
 
-            graph = build_agent(playbook_name, req.document_id)
+            graph = build_agent(playbook_name, req.document_id, long_term_memory)
 
             # Build the full message list: prior history + current question
             messages = prior_messages + [HumanMessage(content=req.question)]
@@ -132,6 +148,21 @@ async def agent_query_stream(
             ):
                 kind = event["event"]
 
+                # Which graph node produced this event? Used to filter out
+                # verifier LLM tokens — only stream agent node output.
+                node_name = ""
+                tags = event.get("tags", [])
+                for tag in tags:
+                    if tag.startswith("seq:step:"):
+                        continue
+                    if tag in ("agent", "tools", "verifier"):
+                        node_name = tag
+                        break
+                # Also check metadata for the langgraph_node field.
+                meta = event.get("metadata", {})
+                if not node_name:
+                    node_name = meta.get("langgraph_node", "")
+
                 if kind == "on_tool_start":
                     data = {
                         "type": "tool_start",
@@ -140,12 +171,22 @@ async def agent_query_stream(
                     }
                     yield f"data: {json.dumps(data)}\n\n"
 
-                elif kind == "on_chat_model_stream":
+                elif kind == "on_chat_model_stream" and node_name != "verifier":
                     chunk = event["data"]["chunk"]
                     content = chunk.content if isinstance(chunk.content, str) else ""
                     if content and not getattr(chunk, "tool_calls", None):
                         accumulated.append(content)
                         yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
+
+                # If verifier rejected, notify the frontend and reset accumulated
+                # so we capture only the revised answer.
+                elif kind == "on_chain_end" and node_name == "verifier":
+                    output = event.get("data", {}).get("output", {})
+                    new_msgs = output.get("messages", []) if isinstance(output, dict) else []
+                    if new_msgs:
+                        # Verifier injected feedback — agent will retry.
+                        accumulated.clear()
+                        yield f"data: {json.dumps({'type': 'verifier_retry', 'message': 'Answer flagged for revision'})}\n\n"
 
         except Exception:
             logger.exception("Stream error")
@@ -186,6 +227,21 @@ async def agent_query_stream(
                     session.title = req.question[:60]
 
                 await db.commit()
+
+                # Store the new Q&A pair as long-term memory.
+                # Non-fatal: memory failure must never break the chat flow.
+                if user is not None and full_answer:
+                    try:
+                        await store_qa_memory(
+                            db,
+                            user_id=str(user.id),
+                            session_id=str(session.id),
+                            question=req.question,
+                            user_msg_id=str(user_msg.id),
+                            asst_msg_id=str(asst_msg.id),
+                        )
+                    except Exception:
+                        logger.exception("Failed to store Q&A memory (non-fatal)")
             except Exception:
                 logger.exception("Failed to persist chat messages")
 
