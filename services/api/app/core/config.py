@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     log_level: str = "info"
 
     openai_api_key: str | None = None
-    brave_api_key: str | None = None
+    tavily_api_key: str | None = None
 
     # AWS region for Textract OCR. On EC2, credentials come from the instance
     # IAM role automatically — no access keys needed. Set AWS_REGION in .env

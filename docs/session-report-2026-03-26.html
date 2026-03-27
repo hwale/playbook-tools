@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playbook Tools — Session Report 2026-03-26</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0c0e13;
+    --surface: #14161d;
+    --surface2: #1a1d27;
+    --border: #2a2d3a;
+    --text: #c8ccd8;
+    --text-dim: #6b7084;
+    --text-bright: #eef0f6;
+    --accent: #4fc1ff;
+    --accent-dim: #2a6a8a;
+    --green: #4ae08c;
+    --green-dim: rgba(74, 224, 140, 0.15);
+    --yellow: #f0c850;
+    --yellow-dim: rgba(240, 200, 80, 0.15);
+    --red: #f06060;
+    --red-dim: rgba(240, 96, 96, 0.15);
+    --purple: #b07aff;
+    --purple-dim: rgba(176, 122, 255, 0.15);
+    --pink: #ff6ea8;
+    --pink-dim: rgba(255, 110, 168, 0.15);
+    --teal: #4ad4c0;
+    --teal-dim: rgba(74, 212, 192, 0.15);
+    --orange: #e8944a;
+    --orange-dim: rgba(232, 148, 74, 0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+
+  header .subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .stat-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-bright);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-card .detail {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    margin-top: 40px;
+  }
+
+  /* Feature cards */
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    overflow: hidden;
+  }
+
+  .feature-card:hover { border-color: var(--accent-dim); }
+
+  .feature-card .card-header {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .feature-card .card-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--accent);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .feature-card .card-info { flex: 1; }
+
+  .feature-card .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 2px;
+  }
+
+  .feature-card .card-subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .feature-card .card-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .badge-new { background: var(--green-dim); color: var(--green); }
+  .badge-modified { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-fix { background: var(--red-dim); color: var(--red); }
+  .badge-infra { background: var(--purple-dim); color: var(--purple); }
+
+  .expand-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .feature-card .card-details {
+    display: none;
+    padding: 0 24px 24px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .feature-card.expanded .card-details {
+    display: block;
+    padding-top: 20px;
+  }
+
+  .feature-card.expanded .expand-hint { display: none; }
+
+  .detail-section { margin-bottom: 18px; }
+  .detail-section:last-child { margin-bottom: 0; }
+
+  .detail-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .detail-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  .detail-text p { margin-bottom: 10px; }
+  .detail-text p:last-child { margin-bottom: 0; }
+
+  .analogy {
+    background: var(--surface2);
+    border-left: 3px solid var(--yellow);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .analogy .analogy-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--yellow);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .how-it-works {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+
+  .how-it-works .step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .how-it-works .step:last-child { margin-bottom: 0; }
+
+  .how-it-works .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .interview-box {
+    background: var(--purple-dim);
+    border: 1px solid rgba(176, 122, 255, 0.3);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 12px 0;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .interview-box .interview-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--purple);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .code-snippet {
+    background: #0a0c10;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 10px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code-snippet .comment { color: var(--text-dim); }
+  .code-snippet .keyword { color: var(--purple); }
+  .code-snippet .string { color: var(--green); }
+  .code-snippet .func { color: var(--accent); }
+
+  .tradeoff {
+    display: flex;
+    gap: 12px;
+    margin: 10px 0;
+  }
+
+  .tradeoff-item {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .tradeoff-item.pro { border-left: 3px solid var(--green); }
+  .tradeoff-item.con { border-left: 3px solid var(--red); }
+
+  .tradeoff-item .tradeoff-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .tradeoff-item.pro .tradeoff-label { color: var(--green); }
+  .tradeoff-item.con .tradeoff-label { color: var(--red); }
+
+  .file-list { list-style: none; padding: 0; }
+
+  .file-list li {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(42, 45, 58, 0.5);
+  }
+
+  .file-list li:last-child { border-bottom: none; }
+  .file-path { color: var(--text); }
+  .file-lines { color: var(--text-dim); font-size: 11px; }
+
+  .future-card {
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 16px 24px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .future-card .icon { font-size: 16px; flex-shrink: 0; }
+  .future-card .future-title { font-size: 14px; color: var(--text); }
+  .future-card .future-note { font-size: 12px; color: var(--text-dim); margin-left: auto; }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 700px) {
+    .stats-row { flex-direction: column; }
+    .feature-card .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .feature-card .card-badges { margin-top: 4px; }
+    .file-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .tradeoff { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>$ playbook-tools — session report</h1>
+    <div class="subtitle">2026-03-26 &nbsp;·&nbsp; RAG pipeline upgrades, memory system, OCR, verifier loop &nbsp;·&nbsp; Learn mode: each feature explained from scratch</div>
+  </header>
+
+  <div id="stats"></div>
+  <div class="section-title">Features Implemented</div>
+  <div id="features"></div>
+  <div class="section-title">Future Items</div>
+  <div id="future"></div>
+
+  <footer>
+    Generated by Claude Code &nbsp;·&nbsp; <a href="https://claude.com/claude-code">claude.com/claude-code</a>
+  </footer>
+
+</div>
+
+<script>
+const stats = [
+  { label: "Features", value: "8", detail: "shipped today" },
+  { label: "New Files", value: "5", detail: "created from scratch" },
+  { label: "Modified", value: "11", detail: "existing files changed" },
+  { label: "AWS", value: "1", detail: "IAM role configured" },
+];
+
+const features = [
+  {
+    num: 1,
+    title: "Tavily Web Search",
+    subtitle: "Replaced DuckDuckGo with Tavily — AI-optimized search that returns clean text instead of HTML",
+    badges: [{ text: "modified", type: "modified" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>When the agent can't find an answer in the uploaded PDF, it needs to search the internet. Before, we used DuckDuckGo — a free search engine. The problem? DuckDuckGo returns results designed for <em>humans</em> — full of HTML tags, ads, and navigation menus. Our LLM had to wade through all that junk to find the actual answer.</p>
+          <p>Tavily is a search API built specifically for AI. When you search "Alphabet P/E ratio 2024", it returns just the clean text with the answer — no HTML, no junk. Think of it as the difference between handing someone a whole newspaper vs. handing them the one paragraph they need.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Imagine you ask a librarian for a fact. DuckDuckGo is like a librarian who hands you 10 entire books and says "it's somewhere in there." Tavily is like a librarian who opens the right book to the right page and highlights the sentence you need.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">How It Works In Our Code</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">1.</span> Agent decides it needs to search the web (after failing to find the answer in the PDF)</div>
+          <div class="step"><span class="step-num">2.</span> Calls <code>web_search(query)</code> in <code>web_search.py</code></div>
+          <div class="step"><span class="step-num">3.</span> If <code>TAVILY_API_KEY</code> env var exists → uses Tavily (clean text results)</div>
+          <div class="step"><span class="step-num">4.</span> If no API key → falls back to DuckDuckGo (free, no signup needed)</div>
+          <div class="step"><span class="step-num">5.</span> Returns results as a JSON string the LLM can read</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Tradeoffs</div>
+        <div class="tradeoff">
+          <div class="tradeoff-item pro">
+            <div class="tradeoff-label">Why Tavily</div>
+            Returns clean text optimized for LLMs. Less tokens wasted on junk = cheaper + more accurate answers. Includes relevance scores.
+          </div>
+          <div class="tradeoff-item con">
+            <div class="tradeoff-label">Downside</div>
+            Costs money ($5/mo for 1000 searches). Requires an API key. DuckDuckGo is free and needs zero setup.
+          </div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "We use a feature flag pattern for web search — if Tavily's API key is configured, we use the premium provider that returns LLM-optimized text. Otherwise, we gracefully degrade to DuckDuckGo. This lets us deploy without hard dependencies on paid services while still optimizing for quality when available."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/agent/tools/web_search.py</span><span class="file-lines">L1–36</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 2,
+    title: "Semantic Chunking",
+    subtitle: "4-pass split-then-merge strategy: paragraphs → sentences → merge small segments → add overlap",
+    badges: [{ text: "new", type: "new" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>When you upload a PDF, we can't just throw the entire document at the LLM — it's too big and too expensive. So we cut it into smaller pieces called <strong>chunks</strong>. Each chunk gets turned into a vector (a list of numbers that represents the meaning) and stored in our vector database.</p>
+          <p>The old way: we just counted characters. Every 500 characters, we made a cut. Problem? Sometimes that cut landed right in the middle of a sentence: <code>"The company's total reve-"</code> in one chunk and <code>"nue was $280 billion."</code> in the next. Neither chunk makes sense on its own.</p>
+          <p>The new way: <strong>semantic chunking</strong>. We cut on natural boundaries — paragraph breaks first, then sentence breaks. This means every chunk contains complete thoughts.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Imagine cutting a pizza. Character chunking is like placing a ruler on the pizza and cutting every 3 inches — you'll cut through toppings, through the crust, wherever. Semantic chunking is like cutting along the natural slice lines — each piece is a complete, eat-able slice.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">The 4-Pass Pipeline</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">Pass 1</span> Split on paragraph boundaries (double newlines). Each paragraph is a natural unit of thought.</div>
+          <div class="step"><span class="step-num">Pass 2</span> If any paragraph is still too big (>chunk_size), split it further on sentence endings (periods, question marks).</div>
+          <div class="step"><span class="step-num">Pass 3</span> Merge tiny consecutive segments back together. If paragraph A is 50 chars and paragraph B is 80 chars, and our limit is 500, combine them into one chunk. No point having tiny chunks.</div>
+          <div class="step"><span class="step-num">Pass 4</span> Add overlap — copy the last 1-2 sentences of each chunk to the beginning of the next chunk. This way, if an important idea spans two chunks, both chunks contain the full context.</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Overlap Matters</div>
+        <div class="detail-text">
+          <p>Imagine a PDF says: "Revenue was $280B. This represents a 15% increase." If chunk 1 ends at "Revenue was $280B." and chunk 2 starts at "This represents a 15% increase" — when someone asks "what was the revenue growth?", chunk 2 matches the question but it says "This represents" without saying what "this" refers to. Overlap fixes this by repeating "Revenue was $280B" at the start of chunk 2.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "We use semantic chunking with a 4-pass pipeline — split on paragraph boundaries, break oversized segments on sentences, merge small segments for efficiency, then add configurable overlap for context continuity. This preserves semantic coherence compared to fixed-size character splitting, which improves retrieval precision downstream."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/tools/chunking.py</span><span class="file-lines">L1–146 (full rewrite)</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 3,
+    title: "LLM2 Verifier Loop (Quality Gate)",
+    subtitle: "A second LLM checks the agent's answer. If it's bad, the agent tries again with feedback.",
+    badges: [{ text: "new", type: "new" }, { text: "modified", type: "modified" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>Sometimes the agent gives a bad answer — it might hallucinate a number, miss part of the question, or answer based on general knowledge instead of the uploaded document. Without a verifier, that bad answer goes straight to the user.</p>
+          <p>The verifier is a <strong>second LLM</strong> that reads the agent's answer and asks three questions: (1) Is it relevant to what the user asked? (2) Is it complete — did it answer the whole question? (3) Is it grounded — does it come from the document, not from the LLM's imagination?</p>
+          <p>If the answer passes all three checks → the user sees it. If it fails → the verifier sends feedback back to the agent ("you missed the revenue figure, try again") and the agent gets one more attempt.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Think of a restaurant kitchen. The chef (agent) cooks the dish. Before it goes to the customer, the head chef (verifier) inspects it. "This steak is undercooked — send it back." The cook gets the feedback and fixes it. But we only allow one re-cook — if it's still bad after the second try, we serve it anyway rather than making the customer wait forever.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">How It Works In The Graph</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">1.</span> User asks a question → <strong>agent node</strong> generates an answer (may use tools like RAG, web search)</div>
+          <div class="step"><span class="step-num">2.</span> Answer flows to <strong>verifier node</strong> instead of directly to the user</div>
+          <div class="step"><span class="step-num">3.</span> Verifier LLM outputs a structured judgment: <code>{ verdict: "good" | "bad", feedback: "..." }</code></div>
+          <div class="step"><span class="step-num">4.</span> If <strong>"good"</strong> → route to END (user sees the answer)</div>
+          <div class="step"><span class="step-num">5.</span> If <strong>"bad"</strong> AND retries &lt; 1 → inject feedback as a message, route back to agent node</div>
+          <div class="step"><span class="step-num">6.</span> If <strong>"bad"</strong> AND retries = 1 → route to END anyway (don't loop forever)</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Max 1 Retry?</div>
+        <div class="detail-text">
+          <p>Without a retry limit, the verifier could reject the agent's answer forever — creating an infinite loop. The user would see a loading spinner that never ends. One retry is the sweet spot: it catches most fixable errors (missing a number, wrong format) without risking runaway loops. In system design, this pattern is called a <strong>circuit breaker</strong> — you allow failure to pass through rather than cascading into worse failures.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why We Filter Verifier Tokens From The Stream</div>
+        <div class="detail-text">
+          <p>The verifier's thinking (the JSON judgment) is internal — the user doesn't need to see "verdict: bad, feedback: you missed the revenue." So in our streaming route, we only send tokens from the <code>agent</code> node to the frontend. The verifier runs silently in the background.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "We added a verifier node to the LangGraph as a quality gate — it uses structured output to judge the agent's response on relevance, completeness, and groundedness. If rejected, feedback is injected as a human message and the agent retries once. This is configurable per playbook via a verifier_enabled flag — finance has it on, general chat has it off. The retry cap of 1 acts as a circuit breaker against infinite loops."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/agent/graph.py</span><span class="file-lines">L46–185</span></li>
+          <li><span class="file-path">packages/schemas/src/playbook_schemas/v1/playbook.py</span><span class="file-lines">L26</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 4,
+    title: "Multi-Step RAG Search + Query Decomposition",
+    subtitle: "Complex questions get split into sub-queries, searched in parallel, and merged with Reciprocal Rank Fusion",
+    badges: [{ text: "new", type: "new" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>Imagine you ask: <em>"Compare Alphabet's P/E ratio to its revenue growth in 2016."</em> This is actually <strong>two questions</strong> hiding in one sentence: (1) What was the P/E ratio in 2016? (2) What was the revenue growth in 2016? If we search the vector database with the original long question, we might get chunks about P/E but miss revenue growth, or vice versa.</p>
+          <p><strong>Query decomposition</strong> fixes this. A small, cheap LLM (gpt-4o-mini) reads the user's question and splits it into 1–3 focused sub-queries. Each sub-query searches the vector database independently. Then we combine all the results together.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          You're at a library looking for info on two topics. Instead of searching the catalog for "P/E ratio AND revenue growth" (which might return nothing because no single book covers both), you search for "P/E ratio" separately and "revenue growth" separately. You get results from both searches and bring all the relevant books to your desk.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">What Is Reciprocal Rank Fusion (RRF)?</div>
+        <div class="detail-text">
+          <p>When you search 3 sub-queries, you get 3 separate ranked lists of chunks. How do you combine them into one final list? You can't just compare their similarity scores directly — the scales might be different.</p>
+          <p><strong>RRF</strong> ignores the scores entirely and only looks at <strong>rank position</strong>. If a chunk appears as #1 in one search and #3 in another, it gets a high combined score. The formula is simple: <code>score = 1/(rank + 60)</code> for each search it appears in, summed up. The 60 is a constant that prevents the #1 result from dominating too much.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Three friends each independently rank their top 5 restaurants. Restaurant A is #1 for friend 1 and #3 for friend 2. Restaurant B is #2 for all three friends. RRF would rank Restaurant B higher because it consistently scored well across all lists, even though Restaurant A was #1 on one list.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">How It Works Step By Step</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">1.</span> User asks: "Compare P/E ratio to revenue growth in 2016"</div>
+          <div class="step"><span class="step-num">2.</span> gpt-4o-mini decomposes → ["P/E ratio 2016", "revenue growth 2016"]</div>
+          <div class="step"><span class="step-num">3.</span> Search vector DB for "P/E ratio 2016" → get top 6 chunks</div>
+          <div class="step"><span class="step-num">4.</span> Search vector DB for "revenue growth 2016" → get top 6 chunks</div>
+          <div class="step"><span class="step-num">5.</span> RRF merges both lists → final ranked list of best chunks from both searches</div>
+          <div class="step"><span class="step-num">6.</span> Top 6 chunks from merged list sent to the agent as context</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">When Is Decomposition Skipped?</div>
+        <div class="detail-text">
+          <p>Simple questions like "What is the stock price?" only produce 1 sub-query — which is the original question itself. In that case, we skip RRF entirely and do a single search. The decomposition LLM is smart enough to not split questions that don't need splitting.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "For complex queries, we use query decomposition via a cheap LLM to split into sub-queries, search each independently, and merge results using Reciprocal Rank Fusion. RRF is rank-based, not score-based, which makes it robust across different embedding spaces. For simple queries, the decomposer returns a single query and we skip the fusion step entirely — zero overhead for the common case."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/tools/query_decompose.py</span><span class="file-lines">L1–75 (new file)</span></li>
+          <li><span class="file-path">services/api/app/agent/tools/rag_retrieve.py</span><span class="file-lines">L35–111</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 5,
+    title: "Long-Term Memory (Cross-Session Q&A Retrieval)",
+    subtitle: "The agent remembers your past questions and answers — even in new chat sessions",
+    badges: [{ text: "new", type: "new" }, { text: "infra", type: "infra" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>Without memory, every new chat session starts from zero. You could upload a Google financial PDF in Chat 1, ask 10 great questions, get 10 great answers — then start Chat 2, upload a Meta PDF, and the agent has completely forgotten everything from Chat 1.</p>
+          <p>Long-term memory fixes this. Every time you ask a question and get an answer, we <strong>embed the question</strong> (turn it into a vector — a list of numbers representing its meaning) and store it in a FAISS index on disk. We also save which chat messages (the Q&A pair) it came from.</p>
+          <p>Next time you ask a similar question in a <em>new</em> session, we search FAISS for similar past questions, look up the original answers from PostgreSQL, and inject them into the prompt as context. The agent now "remembers" what it said before.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Think of short-term memory as a whiteboard in a meeting room — when the meeting (chat session) ends, the whiteboard gets erased. Long-term memory is like a filing cabinet in the hallway. After each meeting, the key notes get filed away. Before the next meeting starts, someone checks the filing cabinet for any relevant past notes and brings them in.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Embed Only The Question?</div>
+        <div class="detail-text">
+          <p>We embed the <strong>question</strong>, not the answer. Why? Because when a new question comes in, we want to find <em>similar past questions</em>. If we embedded the answer too, the vector would be polluted with details that make similarity matching harder. The question is the key — the answer is the value we look up.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">What Is FAISS?</div>
+        <div class="detail-text">
+          <p><strong>FAISS</strong> (Facebook AI Similarity Search) is a library that stores vectors and finds the most similar ones fast. Think of it as a specialized database, but instead of searching by exact matches (like SQL: <code>WHERE name = 'Google'</code>), it searches by <em>meaning similarity</em> — "find me vectors that are closest in meaning to this new vector."</p>
+          <p>We use <code>IndexFlatL2</code>, which is the simplest FAISS index — it compares every stored vector to the query vector using L2 (Euclidean) distance. This is fine for our scale (thousands of questions). At millions of questions, you'd switch to an approximate index like IVF for speed.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">The Full Memory Flow</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">SAVE</span> User asks question → agent answers → we embed the question with OpenAI → store vector + message IDs in FAISS → chat messages already in PostgreSQL</div>
+          <div class="step"><span class="step-num">LOAD</span> New session starts → user asks a question → embed it → search FAISS for top 3 similar past questions → get their message IDs → fetch the original Q&A from PostgreSQL → inject as "here's what you discussed before" in the system prompt</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why Errors Are Swallowed</div>
+        <div class="detail-text">
+          <p>The memory save happens <em>after</em> the user already got their answer. If it fails (OpenAI API down, disk full, etc.), we log the error but don't crash the request. The chat worked fine — memory is a bonus. This is called <strong>graceful degradation</strong> — the system loses a feature but keeps serving its core function.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "Long-term memory uses a write-behind pattern: after each Q&A exchange, we asynchronously embed the question and store it in a FAISS index with a pointer to the PostgreSQL message IDs. On new sessions, we do a kNN search in FAISS, hydrate the results from Postgres, and inject them as context. Memory failures are swallowed to avoid degrading the critical path — graceful degradation over hard failure."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/tools/memory_store.py</span><span class="file-lines">L1–156 (new file)</span></li>
+          <li><span class="file-path">services/api/app/services/memory.py</span><span class="file-lines">L1–123 (new file)</span></li>
+          <li><span class="file-path">services/api/app/core/config.py</span><span class="file-lines">L53–54</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 6,
+    title: "AWS Textract OCR (3-Tier PDF Extraction)",
+    subtitle: "Cascading pipeline: pdfplumber (digital text + tables) → Textract (scanned/OCR) → pypdf (fallback)",
+    badges: [{ text: "new", type: "new" }, { text: "infra", type: "infra" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>Not all PDFs are created equal. Some are <strong>digital</strong> — the text is real text that you can copy-paste. Others are <strong>scanned</strong> — someone took a photo of a paper document and saved it as a PDF. The "text" is actually just pixels in an image.</p>
+          <p>For digital PDFs, <strong>pdfplumber</strong> works great — it reads the real text and can even detect tables. But for scanned PDFs, pdfplumber finds nothing because there's no text layer.</p>
+          <p>That's where <strong>OCR (Optical Character Recognition)</strong> comes in. AWS Textract looks at the image pixels and figures out what letters and numbers are there — like a human reading a photo. It can even detect table structures (rows and columns).</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Imagine three ways to read a book. Tier 1 (pdfplumber): the book is an eBook — you can search, copy, and highlight text instantly. Tier 2 (Textract OCR): the book is a photocopy — you need to read the photos and type out the text yourself. Tier 3 (pypdf): the book is damaged and you're just grabbing whatever fragments you can.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">The 3-Tier Cascade</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">Tier 1</span> <strong>pdfplumber</strong> — tries to extract text + detect tables. If it finds meaningful text (above a character threshold), we're done. This handles ~80% of PDFs.</div>
+          <div class="step"><span class="step-num">Tier 2</span> <strong>AWS Textract</strong> — if pdfplumber finds little/no text (likely a scanned PDF), send each page image to Textract's OCR API. Also calls AnalyzeDocument for table detection. Auth via EC2 IAM role — no API keys.</div>
+          <div class="step"><span class="step-num">Tier 3</span> <strong>pypdf</strong> — if Textract fails too (network error, unsupported format), fall back to pypdf's basic text extraction. Gets something rather than nothing.</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">How Tables Are Extracted</div>
+        <div class="detail-text">
+          <p>Both pdfplumber and Textract can detect tables, but they work differently. <strong>pdfplumber</strong> looks for line patterns on the page — horizontal and vertical lines that form a grid. <strong>Textract</strong> uses machine learning to identify table structures even without visible grid lines.</p>
+          <p>Both output tables as lists of rows. We convert these into <strong>Markdown tables</strong> that the LLM can easily read and reference in its answer.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why IAM Roles Instead Of API Keys?</div>
+        <div class="detail-text">
+          <p>Our app runs on EC2. Instead of storing AWS credentials in an .env file (which could leak), we attached an <strong>IAM role</strong> to the EC2 instance. boto3 (the AWS Python SDK) automatically picks up the role's credentials — zero secrets in our codebase. The role only has permission to call Textract, nothing else.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "PDF extraction uses a cascading pipeline — pdfplumber for digital text and tables, falling through to AWS Textract OCR for scanned documents, with pypdf as a last resort. We authenticate to Textract via EC2 instance IAM roles, avoiding credential management entirely. Table extraction converts structured output to Markdown for LLM consumption."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/tools/pdf.py</span><span class="file-lines">L1–332 (full rewrite)</span></li>
+          <li><span class="file-path">services/api/pyproject.toml</span><span class="file-lines">boto3, pdfplumber added</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 7,
+    title: "Streaming Fix — Filter Tool LLM Tokens",
+    subtitle: "Only stream tokens from the agent node to the UI. Internal LLM calls (decomposer, verifier) stay hidden.",
+    badges: [{ text: "fix", type: "fix" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>Our agent uses <strong>streaming</strong> — tokens (words) appear one at a time in the UI as the LLM generates them, instead of waiting for the entire response. This is what makes ChatGPT feel fast — you see words appearing in real-time.</p>
+          <p>The problem: our agent now has <strong>multiple LLMs</strong> running inside it — the main agent, the query decomposer, and the verifier. All of them produce tokens. Our streaming code was catching tokens from <em>all</em> of them and sending them to the UI. So when the decomposer produced <code>{"queries":["P/E ratio","revenue growth"]}</code>, that JSON appeared in the user's chat!</p>
+          <p>The fix was simple: instead of "stream everything except the verifier" (<code>!= "verifier"</code>), we changed it to "only stream the agent" (<code>== "agent"</code>). One line change.</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Imagine a restaurant where the kitchen has an open window to the dining room. Before the fix, every conversation in the kitchen was audible — the chef discussing ingredients, the dishwasher complaining. After the fix, only the waiter's voice (the agent's response) reaches the dining room. The kitchen chatter (decomposer, verifier) stays in the kitchen.
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">The One-Line Fix</div>
+        <div class="code-snippet"><span class="comment"># Before (broken):</span>
+<span class="keyword">elif</span> kind == <span class="string">"on_chat_model_stream"</span> <span class="keyword">and</span> node_name != <span class="string">"verifier"</span>:
+
+<span class="comment"># After (fixed):</span>
+<span class="keyword">elif</span> kind == <span class="string">"on_chat_model_stream"</span> <span class="keyword">and</span> node_name == <span class="string">"agent"</span>:</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why This Matters Architecturally</div>
+        <div class="detail-text">
+          <p>As your system grows and you add more internal LLM calls (re-rankers, summarizers, classifiers), the exclusion approach (<code>!= "verifier"</code>) breaks every time you add a new component — you'd have to update the filter for each one. The inclusion approach (<code>== "agent"</code>) is future-proof: only the one thing you explicitly want to stream gets through, regardless of how many internal components you add later.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "When streaming with multi-agent architectures, use allowlist filtering (only stream from the designated output node) rather than blocklist filtering (exclude specific nodes). Blocklists require updating every time you add a new internal component. Allowlists are closed by default — new components are silent unless explicitly opted in."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/routes/agent.py</span><span class="file-lines">L174</span></li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    num: 8,
+    title: "Finance Playbook — Prioritize RAG Over Web Search",
+    subtitle: "Added explicit routing rules so the agent always searches the uploaded document before trying the internet",
+    badges: [{ text: "modified", type: "modified" }],
+    details: `
+      <div class="detail-section">
+        <div class="detail-label">The Simple Explanation</div>
+        <div class="detail-text">
+          <p>The user uploads an Alphabet stock analysis PDF and asks: "What's the historical P/E ratio on 12/31/2016?" The answer is literally in the PDF they just uploaded. But the agent was ignoring the PDF and going straight to web search, returning generic S&P 500 data instead of Alphabet-specific data.</p>
+          <p>Why? Because the LLM didn't have strong enough instructions to check the document first. It saw "P/E ratio" and thought "I can just look this up online" — which is technically true, but wrong for this use case. The user uploaded a specific document for a reason.</p>
+          <p>The fix: we added explicit rules to the finance playbook's system prompt — a <strong>CRITICAL RULE</strong> section that says "ALWAYS search the uploaded document first. Only use web search if the document genuinely doesn't have the answer."</p>
+        </div>
+        <div class="analogy">
+          <div class="analogy-label">Analogy</div>
+          Imagine you hand a research assistant a 50-page report and ask "what was the revenue in 2016?" Instead of reading the report you just handed them, they open Google and search for it. The fix is literally telling them: "Read the report I gave you FIRST. Only Google it if the report doesn't have it."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">What We Added To The Prompt</div>
+        <div class="how-it-works">
+          <div class="step"><span class="step-num">Rule 1</span> <strong>ALWAYS</strong> call rag_retrieve first when documents are uploaded</div>
+          <div class="step"><span class="step-num">Rule 2</span> Only use web search for questions clearly outside the document's scope (e.g., "what's the weather?")</div>
+          <div class="step"><span class="step-num">Rule 3</span> If RAG returns chunks but you're not sure they answer the question, try RAG again with a different query before falling back to web search</div>
+          <div class="step"><span class="step-num">Rule 4</span> Decision table: question about document content → RAG. Question about current events → web. Comparison across documents → RAG first, then web to supplement.</div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Why This Is A Prompt Problem, Not A Code Problem</div>
+        <div class="detail-text">
+          <p>We didn't change any code logic — both tools (RAG and web search) were already available. The agent just needed clearer instructions about <em>when to use which tool</em>. This is a common pattern in AI engineering: the model has the capabilities, it just needs better guidance. Prompt engineering is often the cheapest, fastest fix.</p>
+          <p>We also turned on <code>verifier_enabled: true</code> for the finance playbook, so the verifier catches cases where the agent still skips RAG.</p>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Interview Soundbite</div>
+        <div class="interview-box">
+          <div class="interview-label">System Design Interview</div>
+          "Tool routing is controlled at the prompt level via playbook-specific system instructions, not hardcoded in application logic. This makes the routing rules configurable per domain — finance prioritizes document RAG, while a general-knowledge playbook might prioritize web search. The playbook is a YAML file, so non-engineers can tune routing behavior without code changes."
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Files Changed</div>
+        <ul class="file-list">
+          <li><span class="file-path">services/api/app/agent/playbooks/finance.yaml</span><span class="file-lines">L6, L20–62</span></li>
+        </ul>
+      </div>
+    `
+  },
+];
+
+const futureItems = [
+  { icon: "\u{1F4F7}", title: "Vision model for charts/diagrams in PDFs", note: "GPT-4o Vision \u2014 ~$0.01\u20130.03/page" },
+  { icon: "\u{1F512}", title: "Textract table analysis (AnalyzeDocument)", note: "For complex multi-column tables" },
+  { icon: "\u{1F4CA}", title: "Re-ranking with cross-encoder", note: "Improve retrieval precision" },
+  { icon: "\u{1F9EA}", title: "End-to-end eval suite", note: "Automated accuracy benchmarks" },
+];
+
+// Render stats
+document.getElementById('stats').innerHTML = '<div class="stats-row">' +
+  stats.map(s => '<div class="stat-card"><div class="label">' + s.label + '</div><div class="value">' + s.value + '</div><div class="detail">' + s.detail + '</div></div>').join('') +
+  '</div>';
+
+// Render features
+document.getElementById('features').innerHTML = features.map(f =>
+  '<div class="feature-card" onclick="this.classList.toggle(\'expanded\')">' +
+    '<div class="card-header">' +
+      '<div class="card-number">' + f.num + '</div>' +
+      '<div class="card-info"><div class="card-title">' + f.title + '</div><div class="card-subtitle">' + f.subtitle + '</div></div>' +
+      '<div class="card-badges">' + f.badges.map(b => '<span class="badge badge-' + b.type + '">' + b.text + '</span>').join('') + '</div>' +
+      '<span class="expand-hint">click to expand \u2192</span>' +
+    '</div>' +
+    '<div class="card-details">' + f.details + '</div>' +
+  '</div>'
+).join('');
+
+// Render future
+document.getElementById('future').innerHTML = futureItems.map(f =>
+  '<div class="future-card"><span class="icon">' + f.icon + '</span><span class="future-title">' + f.title + '</span><span class="future-note">' + f.note + '</span></div>'
+).join('');
+</script>
+</body>
+</html>

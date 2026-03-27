@@ -87,9 +87,11 @@ def build_agent(
     that checks the agent's final answer before passing to END.
     """
     playbook = get_playbook(playbook_name)
+    logger.info("build_agent: playbook=%s, document_id=%s, tools=%s", playbook_name, document_id, playbook.tool_names)
 
     tools = []
     if "rag.retrieve" in playbook.tool_names and document_id:
+        logger.info("Registering RAG tool for document_id=%s", document_id)
         tools.append(make_rag_tool(document_id, playbook.document_description))
     if "web.search" in playbook.tool_names:
         tools.append(make_web_search_tool())

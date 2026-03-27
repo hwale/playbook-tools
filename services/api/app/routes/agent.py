@@ -171,7 +171,7 @@ async def agent_query_stream(
                     }
                     yield f"data: {json.dumps(data)}\n\n"
 
-                elif kind == "on_chat_model_stream" and node_name != "verifier":
+                elif kind == "on_chat_model_stream" and node_name == "agent":
                     chunk = event["data"]["chunk"]
                     content = chunk.content if isinstance(chunk.content, str) else ""
                     if content and not getattr(chunk, "tool_calls", None):

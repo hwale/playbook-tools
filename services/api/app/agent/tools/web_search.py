@@ -1,10 +1,11 @@
 """
-Web search tool — Brave Search API with DuckDuckGo fallback.
+Web search tool — Tavily Search API with DuckDuckGo fallback.
 
-Brave returns structured JSON with snippets, titles, and URLs.
-DuckDuckGo is free but scrapes HTML — less reliable, lower quality.
+Tavily is purpose-built for AI/RAG: returns clean extracted text
+(not raw HTML), relevance scores, and source URLs. Much better
+for injecting into an LLM context than raw search engine results.
 
-If BRAVE_API_KEY is set in .env, Brave is used. Otherwise, falls back
+If TAVILY_API_KEY is set in .env, Tavily is used. Otherwise, falls back
 to DuckDuckGo so the system works out-of-the-box with zero config.
 """
 import logging
@@ -19,16 +20,16 @@ logger = logging.getLogger(__name__)
 def make_web_search_tool() -> BaseTool:
     settings = get_settings()
 
-    if settings.brave_api_key:
-        from langchain_community.tools import BraveSearch
+    if settings.tavily_api_key:
+        from langchain_community.tools.tavily_search import TavilySearchResults
 
-        logger.info("Web search: using Brave API")
-        return BraveSearch.from_api_key(
-            api_key=settings.brave_api_key,
-            search_kwargs={"count": 5},
+        logger.info("Web search: using Tavily API")
+        return TavilySearchResults(
+            api_key=settings.tavily_api_key,
+            max_results=5,
         )
 
     from langchain_community.tools import DuckDuckGoSearchRun
 
-    logger.info("Web search: using DuckDuckGo (no BRAVE_API_KEY set)")
+    logger.info("Web search: using DuckDuckGo (no TAVILY_API_KEY set)")
     return DuckDuckGoSearchRun()
